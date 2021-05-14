@@ -13,8 +13,18 @@ int main(int argc, char *argv[]) {
     joiner.addRelation(line.c_str());
   }
 
+  // now we construct filterSelectivites
+
   // Preparation phase (not timed)
   // Build histograms, indexes,...
+
+  // query => filter1, filter2, filter3
+  // estimate selectivity of each filter => filterSelectivites
+  // { 1: 0.2, 2: 0.8, 3: 0.1 }
+
+  // order the joins in the query using filterSelectivites?
+
+  
 
   QueryInfo i;
   while (getline(std::cin, line)) {
