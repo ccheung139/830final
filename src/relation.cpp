@@ -104,16 +104,72 @@ void Relation::loadRelation(const char *file_name)
     addr += size_ * sizeof(uint64_t);
   }
 
+  std::vector<int> firstColVals = getColVals(0);
+  std::vector<int> histogram = constructHistogram(firstColVals);
+
+  std::cout << "NEW TEST CASE " << histogram.size() << std::endl;
+
+  for (int i = 0; i < histogram.size(); i++)
+  {
+    std::cout << "Frequency for bucket " << i << " : " << histogram[i] << std::endl;
+  }
+
+  // https://www.postgresql.org/docs/current/row-estimation-examples.html may be useful for different histogram estimates
+  // Section on MCV can be useful if some of the queries have WHERE's that are = constant val (i.e. tablename = 'bonobo')
+  // IntHistogram.java in lab3 mentions avgSelectivity function as means for more efficient optimization (should look into this)
+
   // we touched this
+  // for (int j = 0; j < this->size_; j++)
+  // {
+
+  //   // for (int i = 0; i < this->columns_.size(); i++)
+  //   // {
+  //   auto &c(this->columns_[i]);
+  //   std::cout << c[j] << std::endl;
+  //   // }
+  // }
+}
+
+std::vector<int> Relation::getColVals(int colIdx)
+{
+  std::vector<int> colVals(this->size_, 0);
+  auto &c(this->columns_[colIdx]);
   for (int j = 0; j < this->size_; j++)
   {
-    
-    for (int i = 0; i < this->columns_.size(); i++)
-    {
-      auto &c(this->columns_[i]);
-      std::cout << c[j] << std::endl;
-    }
+    colVals[j] = c[j];
   }
+
+  return colVals;
+}
+
+std::vector<int> Relation::constructHistogram(std::vector<int> colVals)
+{
+  int NUM_BUCKETS = 10;
+  int minVal, maxVal = colVals[0];
+
+  for (int colVal : colVals)
+  {
+    minVal = std::min(colVal, minVal);
+    maxVal = std::max(colVal, maxVal);
+  }
+
+  int bucketWidth = (1 + maxVal - minVal) / NUM_BUCKETS;
+  bucketWidth = std::max(1, bucketWidth); // Incase width gets integer divisioned down to 0
+
+  std::vector<int> histogram(NUM_BUCKETS, 0);
+
+  // A bit of repeated work as before when getting min and maxes (may be better to combine into one)
+  for (int &colVal : colVals)
+  {
+    int bucket = (colVal - minVal) / bucketWidth;
+    if (bucket >= NUM_BUCKETS)
+    {
+      bucket = NUM_BUCKETS - 1; // If overflow, just fit it into last bucket
+    }
+    histogram[bucket]++;
+  }
+
+  return histogram;
 }
 
 // Constructor that loads relation_ from disk

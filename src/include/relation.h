@@ -6,8 +6,9 @@
 
 using RelationId = unsigned;
 
-class Relation {
- private:
+class Relation
+{
+private:
   /// Owns memory (false if it was mmaped)
   bool owns_memory_;
   /// The number of tuples
@@ -15,7 +16,7 @@ class Relation {
   /// The join column containing the keys
   std::vector<uint64_t *> columns_;
 
- public:
+public:
   /// Constructor without mmap
   Relation(uint64_t size, std::vector<uint64_t *> &&columns)
       : owns_memory_(true), size_(size), columns_(columns) {}
@@ -41,8 +42,13 @@ class Relation {
   /// The join column containing the keys
   const std::vector<uint64_t *> &columns() const { return columns_; }
 
- private:
+private:
   /// Loads data from a file
   void loadRelation(const char *file_name);
-};
 
+  // Returns all the values in a certain column specified by colIdx
+  std::vector<int> getColVals(const int colIdx);
+
+  // Returns the histogram with colVals passed in (result of calling getColVals)
+  std::vector<int> constructHistogram(const std::vector<int> colVals);
+};
