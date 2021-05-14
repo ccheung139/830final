@@ -1,0 +1,7 @@
+/Users/christophercheung/Desktop/6.830/830final/build/release/CMakeFiles/edit_cache.dir
+/Users/christophercheung/Desktop/6.830/830final/build/release/CMakeFiles/query2SQL.dir
+/Users/christophercheung/Desktop/6.830/830final/build/release/CMakeFiles/rebuild_cache.dir
+/Users/christophercheung/Desktop/6.830/830final/build/release/CMakeFiles/database.dir
+/Users/christophercheung/Desktop/6.830/830final/build/release/CMakeFiles/link_target.dir
+/Users/christophercheung/Desktop/6.830/830final/build/release/CMakeFiles/driver.dir
+/Users/christophercheung/Desktop/6.830/830final/build/release/CMakeFiles/harness.dir

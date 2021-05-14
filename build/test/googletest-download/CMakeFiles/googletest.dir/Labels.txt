@@ -1,0 +1,14 @@
+# Target labels
+ googletest
+# Source files and their labels
+/Users/christophercheung/Desktop/6.830/830final/build/test/googletest-download/CMakeFiles/googletest
+/Users/christophercheung/Desktop/6.830/830final/build/test/googletest-download/CMakeFiles/googletest.rule
+/Users/christophercheung/Desktop/6.830/830final/build/test/googletest-download/CMakeFiles/googletest-complete.rule
+/Users/christophercheung/Desktop/6.830/830final/build/test/googletest-download/googletest-prefix/src/googletest-stamp/googletest-install.rule
+/Users/christophercheung/Desktop/6.830/830final/build/test/googletest-download/googletest-prefix/src/googletest-stamp/googletest-mkdir.rule
+/Users/christophercheung/Desktop/6.830/830final/build/test/googletest-download/googletest-prefix/src/googletest-stamp/googletest-download.rule
+/Users/christophercheung/Desktop/6.830/830final/build/test/googletest-download/googletest-prefix/src/googletest-stamp/googletest-update.rule
+/Users/christophercheung/Desktop/6.830/830final/build/test/googletest-download/googletest-prefix/src/googletest-stamp/googletest-patch.rule
+/Users/christophercheung/Desktop/6.830/830final/build/test/googletest-download/googletest-prefix/src/googletest-stamp/googletest-configure.rule
+/Users/christophercheung/Desktop/6.830/830final/build/test/googletest-download/googletest-prefix/src/googletest-stamp/googletest-build.rule
+/Users/christophercheung/Desktop/6.830/830final/build/test/googletest-download/googletest-prefix/src/googletest-stamp/googletest-test.rule
