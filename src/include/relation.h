@@ -32,6 +32,11 @@ public:
 
   /// Stores a relation into a file (binary)
   void storeRelation(const std::string &file_name);
+
+  // int *minValPtr;
+  // int *maxValPtr;
+  // int *bucketWidthPtr;
+
   /// Stores a relation into a file (csv)
   void storeRelationCSV(const std::string &file_name);
   /// Dump SQL: Create and load table (PostgreSQL)

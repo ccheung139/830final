@@ -39,6 +39,13 @@ namespace
 
 } // namespace
 
+std::vector<std::vector<std::vector<int>>> histogramList;
+
+void Joiner::appendHistogram(std::vector<std::vector<int>> histogram)
+{
+  histogramList.push_back(histogram);
+}
+
 // Loads a relation_ from disk
 void Joiner::addRelation(const char *file_name)
 {
@@ -92,6 +99,9 @@ std::string Joiner::join(QueryInfo &query)
 
   // enum Comparison : char { Less = '<', Greater = '>', Equal = '=' };
 
+  std::cerr << histogramList[0].size() << std::endl;
+  
+
   auto filters_copy = query.filters();
   for (unsigned i = 0; i < filters_copy.size(); ++i)
   {
@@ -102,8 +112,8 @@ std::string Joiner::join(QueryInfo &query)
 
 
     // estimateSelectivity on indiv_filter
-     std::cerr << "constant: " << std::endl;
-    std::cerr << constant << std::endl;
+    //  std::cerr << "constant: " << std::endl;
+    // std::cerr << constant << std::endl;
   }
 
   // make filter selectivities

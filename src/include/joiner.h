@@ -17,6 +17,7 @@ class Joiner {
   /// Add relation
   void addRelation(const char *file_name);
   void addRelation(Relation &&relation);
+  static void appendHistogram(std::vector<std::vector<int>> histogram);
   /// Get relation
   const Relation &getRelation(unsigned relation_id);
   /// Joins a given set of relations

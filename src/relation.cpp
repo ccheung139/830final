@@ -1,10 +1,13 @@
 #include "relation.h"
+#include "joiner.h"
 
 #include <fcntl.h>
 #include <iostream>
 #include <fstream>
 #include <sys/mman.h>
 #include <sys/stat.h>
+
+int NUM_BUCKETS = 10;
 
 // Stores a relation into a binary file
 void Relation::storeRelation(const std::string &file_name)
@@ -104,15 +107,27 @@ void Relation::loadRelation(const char *file_name)
     addr += size_ * sizeof(uint64_t);
   }
 
-  std::vector<int> firstColVals = getColVals(0);
-  std::vector<int> histogram = constructHistogram(firstColVals);
+  std::vector<std::vector<int>> histogramsForRelation;
 
-  std::cout << "NEW TEST CASE " << histogram.size() << std::endl;
-
-  for (int i = 0; i < histogram.size(); i++)
+  for (int c = 0; c < this->columns_.size(); c++)
   {
-    std::cout << "Frequency for bucket " << i << " : " << histogram[i] << std::endl;
+    std::vector<int> colVals = getColVals(c);
+    std::vector<int> histogramForCol = constructHistogram(colVals);
+
+    histogramsForRelation.push_back(histogramForCol);
   }
+
+  Joiner::appendHistogram(histogramsForRelation);
+
+  // std::vector<int> firstColVals = getColVals(0);
+  // std::vector<int> histogram = constructHistogram(firstColVals);
+
+  // std::cout << "NEW TEST CASE " << histogram.size() << std::endl;
+
+  // for (int i = 0; i < histogram.size(); i++)
+  // {
+  //   std::cout << "Frequency for bucket " << i << " : " << histogram[i] << std::endl;
+  // }
 
   // https://www.postgresql.org/docs/current/row-estimation-examples.html may be useful for different histogram estimates
   // Section on MCV can be useful if some of the queries have WHERE's that are = constant val (i.e. tablename = 'bonobo')
@@ -144,7 +159,7 @@ std::vector<int> Relation::getColVals(int colIdx)
 
 std::vector<int> Relation::constructHistogram(std::vector<int> colVals)
 {
-  int NUM_BUCKETS = 10;
+
   int minVal, maxVal = colVals[0];
 
   for (int colVal : colVals)
@@ -168,6 +183,10 @@ std::vector<int> Relation::constructHistogram(std::vector<int> colVals)
     }
     histogram[bucket]++;
   }
+
+  // *minValPtr = minVal;
+  // *maxValPtr = maxVal;
+  // *bucketWidthPtr = bucketWidth;
 
   return histogram;
 }
