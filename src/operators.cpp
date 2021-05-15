@@ -1,6 +1,7 @@
 #include "operators.h"
 
 #include <cassert>
+#include <thread>
 
 // Get materialized results
 std::vector<uint64_t *> Operator::getResults() {
@@ -109,12 +110,20 @@ void Join::copy2Result(uint64_t left_id, uint64_t right_id) {
   ++result_size_;
 }
 
+void Join::runThingLeft() {
+  left_->run();
+}
+
 // Run
 void Join::run() {
   left_->require(p_info_.left);
   right_->require(p_info_.right);
-  left_->run();
-  right_->run();
+  std::thread tLeft([this]() -> void{left_->run();});
+  std::thread tRight([this]() -> void{right_->run();});
+  // left_->run();
+  // right_->run();
+  tLeft.join();
+  tRight.join();
 
 
   // Use smaller input_ for build

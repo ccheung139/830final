@@ -144,6 +144,7 @@ class Join : public Operator {
   /// Require a column and add it to results
   bool require(SelectInfo info) override;
   /// Run
+  void runThingLeft();
   void run() override;
 };
 
