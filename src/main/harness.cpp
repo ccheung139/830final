@@ -323,14 +323,14 @@ int main(int argc, char *argv[])
       }
 
       bool matched = val == result_batches[batch][i];
-      // std::cout << val << std::endl;
-      // if (!matched)
-      // {
-      //   std::cerr << "Result mismatch for query " << query_no << ", expected: "
-      //             << result_batches[batch][i]
-      //             << ", actual: " << val << std::endl;
-      //   ++failure_cnt;
-      // }
+      std::cout << val << std::endl;
+      if (!matched)
+      {
+        std::cerr << "Result mismatch for query " << query_no << ", expected: "
+                  << result_batches[batch][i]
+                  << ", actual: " << val << std::endl;
+        ++failure_cnt;
+      }
       /*if (matched)
       {
           std::cout << std::endl << val << std::endl
