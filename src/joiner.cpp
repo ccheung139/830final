@@ -14,28 +14,28 @@
 namespace
 {
 
-  enum QueryGraphProvides
-  {
-    Left,
-    Right,
-    Both,
-    None
-  };
+enum QueryGraphProvides
+{
+  Left,
+  Right,
+  Both,
+  None
+};
 
-  // Analyzes inputs of join
-  QueryGraphProvides analyzeInputOfJoin(std::set<unsigned> &usedRelations,
-                                        SelectInfo &leftInfo,
-                                        SelectInfo &rightInfo)
-  {
-    bool used_left = usedRelations.count(leftInfo.binding);
-    bool used_right = usedRelations.count(rightInfo.binding);
+// Analyzes inputs of join
+QueryGraphProvides analyzeInputOfJoin(std::set<unsigned> &usedRelations,
+                                      SelectInfo &leftInfo,
+                                      SelectInfo &rightInfo)
+{
+  bool used_left = usedRelations.count(leftInfo.binding);
+  bool used_right = usedRelations.count(rightInfo.binding);
 
-    if (used_left ^ used_right)
-      return used_left ? QueryGraphProvides::Left : QueryGraphProvides::Right;
-    if (used_left && used_right)
-      return QueryGraphProvides::Both;
-    return QueryGraphProvides::None;
-  }
+  if (used_left ^ used_right)
+    return used_left ? QueryGraphProvides::Left : QueryGraphProvides::Right;
+  if (used_left && used_right)
+    return QueryGraphProvides::Both;
+  return QueryGraphProvides::None;
+}
 
 } // namespace
 
@@ -219,52 +219,51 @@ std::string Joiner::join(QueryInfo &query)
   return out.str();
 }
 
-double estimateSelectivity(std::vector<int> histogram, int minVal, int maxVal, int bucketWidth, FilterInfo::Comparison op, uint64_t val)
-{ 
-  return 1.0;
-  // int NUM_BUCKETS = 10;
-  // int nTups = 10;
-  // // int nTups = this->size_;
-  // int bucketIndex = std::min(int((val - minVal) / bucketWidth), NUM_BUCKETS - 1);
+double Joiner::estimateSelectivity(std::vector<int> histogram, int minVal, int maxVal, int bucketWidth, FilterInfo::Comparison op, uint64_t val)
+{
+  int NUM_BUCKETS = 10;
+  int nTups = 10;
+  // int nTups = this->size_;
+  int bucketIndex = std::min(int((val - minVal) / bucketWidth), NUM_BUCKETS - 1);
 
-  // switch (op)
-  // {
-  // case FilterInfo::Comparison::Equal:
-  // {
-  //   if (val < minVal || val > minVal)
-  //   {
-  //     return 0.0;
-  //   }
-  //   return 1.0 * histogram[bucketIndex] / bucketWidth / nTups;
-  // }
-  // case FilterInfo::Comparison::Less:
-  // {
-  //   if (val > maxVal)
-  //   {
-  //     return 1.0;
-  //   }
-  //   if (val < minVal)
-  //   {
-  //     return 0.0;
-  //   }
-  //   int bucketMin = minVal + bucketWidth * bucketIndex;
-  //   double proportionLessThan = (val - bucketMin) / bucketWidth;
-  //   double runningSum =
-  //       proportionLessThan *
-  //       (1.0 * histogram[bucketIndex] / bucketWidth / nTups);
-  //   for (int i = 0; i < bucketIndex; i++)
-  //   {
-  //     runningSum += 1.0 * histogram[bucketIndex] / bucketWidth / nTups;
-  //   }
-  //   return runningSum;
-  // }
-  // case FilterInfo::Comparison::Greater:
-  // {
-  //   return 1 - estimateSelectivity(histogram, minVal, maxVal, bucketWidth, FilterInfo::Comparison::Less, val) - estimateSelectivity(histogram, minVal, maxVal, bucketWidth, FilterInfo::Comparison::Equal, val);
-  // }
-  // default:
-  // {
-  //   return 0.0;
-  // }
-  // }
+  switch (op)
+  {
+  case FilterInfo::Comparison::Equal:
+  {
+    if (val < minVal || val > minVal)
+    {
+      return 0.0;
+    }
+    return 1.0 * histogram[bucketIndex] / bucketWidth / nTups;
+  }
+  case FilterInfo::Comparison::Less:
+  {
+    if (val > maxVal)
+    {
+      return 1.0;
+    }
+    if (val < minVal)
+    {
+      return 0.0;
+    }
+    int bucketMin = minVal + bucketWidth * bucketIndex;
+    double proportionLessThan = (val - bucketMin) / bucketWidth;
+    double runningSum =
+        proportionLessThan *
+        (1.0 * histogram[bucketIndex] / bucketWidth / nTups);
+    for (int i = 0; i < bucketIndex; i++)
+    {
+      runningSum += 1.0 * histogram[bucketIndex] / bucketWidth / nTups;
+    }
+    return runningSum;
+  }
+  case FilterInfo::Comparison::Greater:
+  {
+    return 1 - estimateSelectivity(histogram, minVal, maxVal, bucketWidth, FilterInfo::Comparison::Less, val) - estimateSelectivity(histogram, minVal, maxVal, bucketWidth, FilterInfo::Comparison::Equal, val);
+  }
+  default:
+  {
+    return 0.0;
+  }
+  }
 }
