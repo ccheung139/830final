@@ -116,7 +116,7 @@ std::string Joiner::join(QueryInfo &query)
   // }
 
   auto filters_copy = query.filters();
-  for (unsigned i = 0; i < 1; ++i)
+  for (unsigned i = 0; i < filters_copy.size(); ++i)
   {
     auto &indiv_filter = filters_copy[i];
     FilterInfo::Comparison comparison = indiv_filter.comparison;
