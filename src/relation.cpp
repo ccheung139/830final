@@ -191,6 +191,7 @@ std::vector<int> Relation::constructHistogram(std::vector<int> colVals)
   histogram.push_back(minVal);
   histogram.push_back(maxVal);
   histogram.push_back(bucketWidth);
+  histogram.push_back(this->size_);
 
   return histogram;
 }

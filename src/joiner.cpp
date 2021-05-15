@@ -128,6 +128,8 @@ std::string Joiner::join(QueryInfo &query)
     std::vector<std::vector<int>> &histograms = histogramList[relation_id];
     std::vector<int> &histogram = histograms[col_id];
 
+    int nTups = histogram.back();
+    histogram.pop_back();
     int bucketWidth = histogram.back();
     histogram.pop_back();
     int maxVal = histogram.back();
@@ -135,8 +137,13 @@ std::string Joiner::join(QueryInfo &query)
     int minVal = histogram.back();
     histogram.pop_back();
 
-    double selectivity = estimateSelectivity(histogram, minVal, maxVal, bucketWidth, comparison, constant);
+    double selectivity = estimateSelectivity(histogram, minVal, maxVal, bucketWidth, comparison, constant, nTups);
     std::cerr << "selectivity: " << selectivity << std::endl;
+
+    histogram.push_back(minVal);
+    histogram.push_back(maxVal);
+    histogram.push_back(bucketWidth);
+    histogram.push_back(nTups);
 
     // now run estimate selectivity
 
@@ -219,11 +226,11 @@ std::string Joiner::join(QueryInfo &query)
   return out.str();
 }
 
-double Joiner::estimateSelectivity(std::vector<int> histogram, int minVal, int maxVal, int bucketWidth, FilterInfo::Comparison op, uint64_t val)
+double Joiner::estimateSelectivity(std::vector<int> histogram, int minVal, int maxVal, int bucketWidth, FilterInfo::Comparison op, uint64_t val, int nTups)
 {
+  std::cerr << "OPERATION: " << op << std::endl;
+
   int NUM_BUCKETS = 10;
-  int nTups = 10;
-  // int nTups = this->size_;
   int bucketIndex = std::min(int((val - minVal) / bucketWidth), NUM_BUCKETS - 1);
 
   switch (op)
@@ -247,19 +254,23 @@ double Joiner::estimateSelectivity(std::vector<int> histogram, int minVal, int m
       return 0.0;
     }
     int bucketMin = minVal + bucketWidth * bucketIndex;
-    double proportionLessThan = (val - bucketMin) / bucketWidth;
+    double proportionLessThan = (val - (float)bucketMin) / (float)bucketWidth;
     double runningSum =
         proportionLessThan *
-        (1.0 * histogram[bucketIndex] / bucketWidth / nTups);
+        (1.0 * histogram[bucketIndex] / (float)bucketWidth / (float)nTups);
+
+    std::cerr << "FIRST RUNNING SUM : " << runningSum << " BUCKET INDEX: " << bucketIndex << " BUCKET MIN " << bucketMin << " BUCKET WIDTH " << bucketWidth << std::endl;
+
     for (int i = 0; i < bucketIndex; i++)
     {
       runningSum += 1.0 * histogram[bucketIndex] / bucketWidth / nTups;
     }
+
     return runningSum;
   }
   case FilterInfo::Comparison::Greater:
   {
-    return 1 - estimateSelectivity(histogram, minVal, maxVal, bucketWidth, FilterInfo::Comparison::Less, val) - estimateSelectivity(histogram, minVal, maxVal, bucketWidth, FilterInfo::Comparison::Equal, val);
+    return 1 - estimateSelectivity(histogram, minVal, maxVal, bucketWidth, FilterInfo::Comparison::Less, val, nTups) - estimateSelectivity(histogram, minVal, maxVal, bucketWidth, FilterInfo::Comparison::Equal, val, nTups);
   }
   default:
   {

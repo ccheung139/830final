@@ -8,17 +8,18 @@
 #include "relation.h"
 #include "parser.h"
 
-class Joiner {
- private:
+class Joiner
+{
+private:
   /// The relations that might be joined
   std::vector<Relation> relations_;
 
- public:
+public:
   /// Add relation
   void addRelation(const char *file_name);
   void addRelation(Relation &&relation);
   static void appendHistogram(std::vector<std::vector<int>> histogram);
-  double estimateSelectivity(std::vector<int> histogram, int minVal, int maxVal, int bucketWidth, FilterInfo::Comparison op, uint64_t val);
+  double estimateSelectivity(std::vector<int> histogram, int minVal, int maxVal, int bucketWidth, FilterInfo::Comparison op, uint64_t val, int nTups);
   /// Get relation
   const Relation &getRelation(unsigned relation_id);
   /// Joins a given set of relations
@@ -26,10 +27,9 @@ class Joiner {
 
   const std::vector<Relation> &relations() const { return relations_; }
 
- private:
+private:
   /// Add scan to query
   std::unique_ptr<Operator> addScan(std::set<unsigned> &used_relations,
                                     const SelectInfo &info,
                                     QueryInfo &query);
 };
-
