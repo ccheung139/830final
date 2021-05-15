@@ -18,6 +18,7 @@ class Joiner {
   void addRelation(const char *file_name);
   void addRelation(Relation &&relation);
   static void appendHistogram(std::vector<std::vector<int>> histogram);
+  double estimateSelectivity(std::vector<int> histogram, int minVal, int maxVal, int bucketWidth, FilterInfo::Comparison op, uint64_t val);
   /// Get relation
   const Relation &getRelation(unsigned relation_id);
   /// Joins a given set of relations

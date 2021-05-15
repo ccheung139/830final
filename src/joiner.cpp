@@ -100,7 +100,20 @@ std::string Joiner::join(QueryInfo &query)
   // enum Comparison : char { Less = '<', Greater = '>', Equal = '=' };
 
   std::cerr << histogramList[0].size() << std::endl;
-  
+  // auto relation_ids = query.relation_ids();
+  // for (unsigned i = 0; i < relation_ids.size(); ++i)
+  // {
+  //   auto &relation_id = relation_ids[i];
+  //   std::cerr << "relationId: " << relation_id << std::endl;
+  //   std::vector<std::vector<int>> &histograms = histogramList[relation_id];
+
+  //   std::vector<int> &hist0 = histograms[0];
+
+  //   for (int i = 0; i < hist0.size(); i++)
+  //   {
+  //     std::cout << "Frequency for bucket " << i << " : " << hist0[i] << std::endl;
+  //   }
+  // }
 
   auto filters_copy = query.filters();
   for (unsigned i = 0; i < filters_copy.size(); ++i)
@@ -108,8 +121,24 @@ std::string Joiner::join(QueryInfo &query)
     auto &indiv_filter = filters_copy[i];
     FilterInfo::Comparison comparison = indiv_filter.comparison;
     auto constant = indiv_filter.constant;
+    SelectInfo select_info = indiv_filter.filter_column;
+    RelationId relation_id = select_info.rel_id;
+    unsigned col_id = select_info.col_id;
 
+    std::vector<std::vector<int>> &histograms = histogramList[relation_id];
+    std::vector<int> &histogram = histograms[col_id];
 
+    int bucketWidth = histogram.back();
+    histogram.pop_back();
+    int maxVal = histogram.back();
+    histogram.pop_back();
+    int minVal = histogram.back();
+    histogram.pop_back();
+
+    double selectivity = estimateSelectivity(histogram, minVal, maxVal, bucketWidth, comparison, constant);
+    std::cerr << "selectivity: " << selectivity << std::endl;
+
+    // now run estimate selectivity
 
     // estimateSelectivity on indiv_filter
     //  std::cerr << "constant: " << std::endl;
@@ -188,4 +217,54 @@ std::string Joiner::join(QueryInfo &query)
   }
   out << "\n";
   return out.str();
+}
+
+double estimateSelectivity(std::vector<int> histogram, int minVal, int maxVal, int bucketWidth, FilterInfo::Comparison op, uint64_t val)
+{ 
+  return 1.0;
+  // int NUM_BUCKETS = 10;
+  // int nTups = 10;
+  // // int nTups = this->size_;
+  // int bucketIndex = std::min(int((val - minVal) / bucketWidth), NUM_BUCKETS - 1);
+
+  // switch (op)
+  // {
+  // case FilterInfo::Comparison::Equal:
+  // {
+  //   if (val < minVal || val > minVal)
+  //   {
+  //     return 0.0;
+  //   }
+  //   return 1.0 * histogram[bucketIndex] / bucketWidth / nTups;
+  // }
+  // case FilterInfo::Comparison::Less:
+  // {
+  //   if (val > maxVal)
+  //   {
+  //     return 1.0;
+  //   }
+  //   if (val < minVal)
+  //   {
+  //     return 0.0;
+  //   }
+  //   int bucketMin = minVal + bucketWidth * bucketIndex;
+  //   double proportionLessThan = (val - bucketMin) / bucketWidth;
+  //   double runningSum =
+  //       proportionLessThan *
+  //       (1.0 * histogram[bucketIndex] / bucketWidth / nTups);
+  //   for (int i = 0; i < bucketIndex; i++)
+  //   {
+  //     runningSum += 1.0 * histogram[bucketIndex] / bucketWidth / nTups;
+  //   }
+  //   return runningSum;
+  // }
+  // case FilterInfo::Comparison::Greater:
+  // {
+  //   return 1 - estimateSelectivity(histogram, minVal, maxVal, bucketWidth, FilterInfo::Comparison::Less, val) - estimateSelectivity(histogram, minVal, maxVal, bucketWidth, FilterInfo::Comparison::Equal, val);
+  // }
+  // default:
+  // {
+  //   return 0.0;
+  // }
+  // }
 }
