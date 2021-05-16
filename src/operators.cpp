@@ -154,9 +154,10 @@ void Join::mergeIntingTmpResults()
       auto data = inting_tmp_results_[threadIdx][col];
       for (int row = 0; row < data.size(); row++)
       {
-        tmp_results_[rel_col_id++].push_back(data[row]);
+        tmp_results_[rel_col_id].push_back(data[row]);
       }
     }
+    rel_col_id++;
   }
 }
 
@@ -230,15 +231,14 @@ void Join::run()
   inting_tmp_results_.resize(NUM_THREADS);
 
   int randomSize = copy_left_data_.size() + copy_right_data_.size();
-
+  std::cerr << "starting" << std::endl;
   for (int i = 0; i < inting_tmp_results_.size(); i++)
   {
-    inting_tmp_results_[i].resize(randomSize*2);
+    inting_tmp_results_[i].resize(randomSize);
   }
 
   uint64_t limit = right_->result_size();
   int size = limit / (NUM_THREADS);
-
   for (int j = 0; j < NUM_THREADS; j++)
   {
     uint64_t upperBound;
@@ -250,10 +250,11 @@ void Join::run()
     {
       upperBound = size * (j + 1);
     }
+   
     //spin up thread
     for (uint64_t i = j * size; i < upperBound; ++i)
     {
-
+       std::cerr << i << std::endl;
       // 209 - 215 into function
       auto rightKey = right_key_column[i];
       auto range = hash_table_.equal_range(rightKey);
@@ -266,7 +267,7 @@ void Join::run()
 
   std::cerr << "reached here" << std::endl;
 
-  // for (uint64_t i = 0; i != limit; ++i) {
+  // for (uint64_t i = 0, limit = right_->result_size(); i != limit; ++i) {
   //   auto rightKey = right_key_column[i];
   //   auto range = hash_table_.equal_range(rightKey);
   //   for (auto iter = range.first; iter != range.second; ++iter) {
