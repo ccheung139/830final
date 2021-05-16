@@ -31,6 +31,9 @@ class Operator {
   std::vector<uint64_t *> result_columns_;
   /// The tmp results
   std::vector<std::vector<uint64_t>> tmp_results_;
+
+  // The temp temp results lol
+  std::vector<std::vector<std::vector<uint64_t>>> inting_tmp_results_;
   /// The result size
   uint64_t result_size_ = 0;
 
@@ -132,6 +135,10 @@ class Join : public Operator {
  private:
   /// Copy tuple to result
   void copy2Result(uint64_t left_id, uint64_t right_id);
+
+  void copy2ResultInting(uint64_t left_id, uint64_t right_id, uint64_t index);
+
+  void mergeIntingTmpResults();
   /// Create mapping for bindings
   void createMappingForBindings();
 

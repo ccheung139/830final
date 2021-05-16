@@ -115,6 +115,8 @@ std::string Joiner::join(QueryInfo &query)
   //   }
   // }
 
+  
+
   auto filters_copy = query.filters();
   for (unsigned i = 0; i < filters_copy.size(); ++i)
   {
