@@ -34,6 +34,9 @@ class Operator {
 
   // The temp temp results lol
   std::vector<std::vector<std::vector<uint64_t>>> inting_tmp_results_;
+
+  // result sizes gathered by each thread
+  std::vector<uint64_t> inting_result_sizes_;
   /// The result size
   uint64_t result_size_ = 0;
 
@@ -137,6 +140,8 @@ class Join : public Operator {
   void copy2Result(uint64_t left_id, uint64_t right_id);
 
   void copy2ResultInting(uint64_t left_id, uint64_t right_id, uint64_t index);
+
+  void runTask(uint64_t lowerBound, uint64_t upperBound, int index, uint64_t* right_key_column);
 
   void mergeIntingTmpResults();
   /// Create mapping for bindings

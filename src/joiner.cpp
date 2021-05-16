@@ -115,42 +115,42 @@ std::string Joiner::join(QueryInfo &query)
   // }
 
   
+  // HISTOGRAM STUFF
+  // auto filters_copy = query.filters();
+  // for (unsigned i = 0; i < filters_copy.size(); ++i)
+  // {
+  //   auto &indiv_filter = filters_copy[i];
+  //   FilterInfo::Comparison comparison = indiv_filter.comparison;
+  //   auto constant = indiv_filter.constant;
+  //   SelectInfo select_info = indiv_filter.filter_column;
+  //   RelationId relation_id = select_info.rel_id;
+  //   unsigned col_id = select_info.col_id;
 
-  auto filters_copy = query.filters();
-  for (unsigned i = 0; i < filters_copy.size(); ++i)
-  {
-    auto &indiv_filter = filters_copy[i];
-    FilterInfo::Comparison comparison = indiv_filter.comparison;
-    auto constant = indiv_filter.constant;
-    SelectInfo select_info = indiv_filter.filter_column;
-    RelationId relation_id = select_info.rel_id;
-    unsigned col_id = select_info.col_id;
+  //   std::vector<std::vector<int>> &histograms = histogramList[relation_id];
+  //   std::vector<int> &histogram = histograms[col_id];
 
-    std::vector<std::vector<int>> &histograms = histogramList[relation_id];
-    std::vector<int> &histogram = histograms[col_id];
+  //   int nTups = histogram.back();
+  //   histogram.pop_back();
+  //   int bucketWidth = histogram.back();
+  //   histogram.pop_back();
+  //   int maxVal = histogram.back();
+  //   histogram.pop_back();
+  //   int minVal = histogram.back();
+  //   histogram.pop_back();
+  //   double selectivity = estimateSelectivity(histogram, minVal, maxVal, bucketWidth, comparison, constant, nTups);
+  //   std::cerr << "selectivity: " << selectivity << std::endl;
 
-    int nTups = histogram.back();
-    histogram.pop_back();
-    int bucketWidth = histogram.back();
-    histogram.pop_back();
-    int maxVal = histogram.back();
-    histogram.pop_back();
-    int minVal = histogram.back();
-    histogram.pop_back();
-    double selectivity = estimateSelectivity(histogram, minVal, maxVal, bucketWidth, comparison, constant, nTups);
-    std::cerr << "selectivity: " << selectivity << std::endl;
+  //   histogram.push_back(minVal);
+  //   histogram.push_back(maxVal);
+  //   histogram.push_back(bucketWidth);
+  //   histogram.push_back(nTups);
 
-    histogram.push_back(minVal);
-    histogram.push_back(maxVal);
-    histogram.push_back(bucketWidth);
-    histogram.push_back(nTups);
+  //   // now run estimate selectivity
 
-    // now run estimate selectivity
-
-    // estimateSelectivity on indiv_filter
-    //  std::cerr << "constant: " << std::endl;
-    // std::cerr << constant << std::endl;
-  }
+  //   // estimateSelectivity on indiv_filter
+  //   //  std::cerr << "constant: " << std::endl;
+  //   // std::cerr << constant << std::endl;
+  // }
 
   // make filter selectivities
   // make join ordering

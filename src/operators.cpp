@@ -141,21 +141,26 @@ void Join::copy2ResultInting(uint64_t left_id, uint64_t right_id, uint64_t index
     // std::cerr << "second2: " << rel_col_id << std::endl;
     inting_tmp_results_[index][rel_col_id++].push_back(copy_right_data_[cId][right_id]);
   }
-  ++result_size_;
+  ++inting_result_sizes_[index];
 }
 
 void Join::mergeIntingTmpResults()
 {
-  for (int col = 0; col < inting_tmp_results_[0].size(); col++)
+  for (int col = 0; col < inting_tmp_results_[0].size(); ++col)
   {
-    for (int threadIdx = 0; threadIdx < inting_tmp_results_.size(); threadIdx++)
+    for (int threadIdx = 0; threadIdx < inting_tmp_results_.size(); ++threadIdx)
     {
       auto data = inting_tmp_results_[threadIdx][col];
-      for (int row = 0; row < data.size(); row++)
+      for (int row = 0; row < data.size(); ++row)
       {
         tmp_results_[col].push_back(data[row]);
       }
     }
+  }
+  
+  // might want to add this step to the loop above for performance gains later
+  for (int threadIdx = 0; threadIdx < inting_result_sizes_.size(); ++threadIdx) {
+    result_size_ += inting_result_sizes_[threadIdx];
   }
 }
 
@@ -181,12 +186,12 @@ void Join::run()
 {
   left_->require(p_info_.left);
   right_->require(p_info_.right);
-  std::thread tLeft([this]() -> void { left_->run(); });
-  std::thread tRight([this]() -> void { right_->run(); });
-  // left_->run();
-  // right_->run();
-  tLeft.join();
-  tRight.join();
+  // std::thread tLeft([this]() -> void { left_->run(); });
+  // std::thread tRight([this]() -> void { right_->run(); });
+  left_->run();
+  right_->run();
+  // tLeft.join();
+  // tRight.join();
 
   // Use smaller input_ for build
   if (left_->result_size() > right_->result_size())
@@ -227,14 +232,16 @@ void Join::run()
 
   int NUM_THREADS = 16;
   inting_tmp_results_.resize(NUM_THREADS);
+  inting_result_sizes_.resize(NUM_THREADS);
 
   int randomSize = copy_left_data_.size() + copy_right_data_.size();
-  std::cerr << "starting" << std::endl;
+  // std::cerr << "starting" << std::endl;
   for (int i = 0; i < inting_tmp_results_.size(); i++)
   {
     inting_tmp_results_[i].resize(randomSize);
   }
 
+  std::vector<std::thread> threads;
   uint64_t limit = right_->result_size();
   int size = limit / (NUM_THREADS);
   for (int j = 0; j < NUM_THREADS; j++)
@@ -250,19 +257,26 @@ void Join::run()
     }
    
     //spin up thread
-    for (uint64_t i = j * size; i < upperBound; ++i)
-    {
-      // 209 - 215 into function
-      auto rightKey = right_key_column[i];
-      auto range = hash_table_.equal_range(rightKey);
-      for (auto iter = range.first; iter != range.second; ++iter)
-      {
-        copy2ResultInting(iter->second, i, j);
-      }
-    }
+    // for (uint64_t i = j * size; i < upperBound; ++i)
+    // {
+    //   // 209 - 215 into function
+    //   auto rightKey = right_key_column[i];
+    //   auto range = hash_table_.equal_range(rightKey);
+    //   for (auto iter = range.first; iter != range.second; ++iter)
+    //   {
+    //     copy2ResultInting(iter->second, i, j);
+    //   }
+    // }
+
+    // runTask(j * size, upperBound, j, right_key_column);
+
+    threads.push_back(std::thread(&Join::runTask, this, j * size, upperBound, j, right_key_column));
   }
 
-  std::cerr << "reached here" << std::endl;
+  for (auto& thread : threads) {
+    thread.join();
+  }
+  // std::cerr << "reached here" << std::endl;
 
   // for (uint64_t i = 0, limit = right_->result_size(); i != limit; ++i) {
   //   auto rightKey = right_key_column[i];
@@ -271,8 +285,20 @@ void Join::run()
   //     copy2Result(iter->second, i);
   //   }
   // }
-
   mergeIntingTmpResults();
+}
+
+void Join::runTask(uint64_t lowerBound, uint64_t upperBound, int index, uint64_t* right_key_column) {
+  for (uint64_t i = lowerBound; i < upperBound; ++i)
+    {
+      // 209 - 215 into function
+      auto rightKey = right_key_column[i];
+      auto range = hash_table_.equal_range(rightKey);
+      for (auto iter = range.first; iter != range.second; ++iter)
+      {
+        copy2ResultInting(iter->second, i, index);
+      }
+    }
 }
 
 // Copy to result

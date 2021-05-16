@@ -323,7 +323,7 @@ int main(int argc, char *argv[])
       }
 
       bool matched = val == result_batches[batch][i];
-      std::cout << val << std::endl;
+      // std::cout << val << std::endl;
       if (!matched)
       {
         std::cerr << "Result mismatch for query " << query_no << ", expected: "
