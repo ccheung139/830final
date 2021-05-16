@@ -26,10 +26,9 @@ struct hash<SelectInfo>
 }; // namespace std
 
 /// Operators materialize their entire result
-class Operator
-{
-protected:
-  int NUM_THREADS = 16;
+class Operator {
+ protected:
+  int NUM_THREADS = 24;
   /// Mapping from select info to data
   std::unordered_map<SelectInfo, unsigned> select_to_result_col_id_;
   /// The materialized results
@@ -41,7 +40,8 @@ protected:
   std::vector<std::vector<std::vector<uint64_t>>> inting_tmp_results_;
 
   // result sizes gathered by each thread
-  std::vector<uint64_t> inting_result_sizes_;
+  // std::vector<uint64_t> inting_result_sizes_;
+
   /// The result size
   uint64_t result_size_ = 0;
 
@@ -160,7 +160,7 @@ private:
 
   void runTask(uint64_t lowerBound, uint64_t upperBound, int index, uint64_t *right_key_column);
 
-  void mergeIntingTmpResults();
+  void mergeIntingTmpResults(int col);
   /// Create mapping for bindings
   void createMappingForBindings();
 
