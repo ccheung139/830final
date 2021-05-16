@@ -12,19 +12,23 @@
 #include "relation.h"
 #include "parser.h"
 
-namespace std {
+namespace std
+{
 /// Simple hash function to enable use with unordered_map
-template<>
-struct hash<SelectInfo> {
-  std::size_t operator()(SelectInfo const &s) const noexcept {
+template <>
+struct hash<SelectInfo>
+{
+  std::size_t operator()(SelectInfo const &s) const noexcept
+  {
     return s.binding ^ (s.col_id << 5);
   }
 };
-};
+}; // namespace std
 
 /// Operators materialize their entire result
-class Operator {
- protected:
+class Operator
+{
+protected:
   int NUM_THREADS = 16;
   /// Mapping from select info to data
   std::unordered_map<SelectInfo, unsigned> select_to_result_col_id_;
@@ -41,14 +45,16 @@ class Operator {
   /// The result size
   uint64_t result_size_ = 0;
 
- public:
+public:
   /// The destructor
-  virtual ~Operator() = default;;
+  virtual ~Operator() = default;
+  ;
 
   /// Require a column and add it to results
   virtual bool require(SelectInfo info) = 0;
   /// Resolves a column
-  unsigned resolve(SelectInfo info) {
+  unsigned resolve(SelectInfo info)
+  {
     assert(select_to_result_col_id_.find(info) != select_to_result_col_id_.end());
     return select_to_result_col_id_[info];
   }
@@ -60,17 +66,18 @@ class Operator {
   uint64_t result_size() const { return result_size_; }
 };
 
-class Scan : public Operator {
- protected:
+class Scan : public Operator
+{
+protected:
   /// The relation
   const Relation &relation_;
   /// The name of the relation in the query
   unsigned relation_binding_;
 
- public:
+public:
   /// The constructor
   Scan(const Relation &r, unsigned relation_binding)
-      : relation_(r), relation_binding_(relation_binding) {};
+      : relation_(r), relation_binding_(relation_binding){};
   /// Require a column and add it to results
   bool require(SelectInfo info) override;
   /// Run
@@ -79,14 +86,15 @@ class Scan : public Operator {
   virtual std::vector<uint64_t *> getResults() override;
 };
 
-class FilterScan : public Scan {
- private:
+class FilterScan : public Scan
+{
+private:
   /// The filter info
   std::vector<FilterInfo> filters_;
   /// The input data
   std::vector<uint64_t *> input_data_;
 
- private:
+private:
   /// Apply filter
   bool applyFilter(uint64_t id, FilterInfo &f);
   /// Copy tuple to result
@@ -98,31 +106,33 @@ class FilterScan : public Scan {
 
   void mergeIntingTmpResults();
 
- public:
+public:
   /// The constructor
   FilterScan(const Relation &r, std::vector<FilterInfo> filters)
       : Scan(r,
              filters[0].filter_column.binding),
-        filters_(filters) {};
+        filters_(filters){};
   /// The constructor
   FilterScan(const Relation &r, FilterInfo &filter_info)
       : FilterScan(r,
                    std::vector<
                        FilterInfo>{
-                       filter_info}) {};
+                       filter_info}){};
 
   /// Require a column and add it to results
   bool require(SelectInfo info) override;
   /// Run
   void run() override;
   /// Get  materialized results
-  virtual std::vector<uint64_t *> getResults() override {
+  virtual std::vector<uint64_t *> getResults() override
+  {
     return Operator::getResults();
   }
 };
 
-class Join : public Operator {
- private:
+class Join : public Operator
+{
+private:
   /// The input operators
   std::unique_ptr<Operator> left_, right_;
   /// The join predicate info
@@ -142,24 +152,24 @@ class Join : public Operator {
   /// The input data that has to be copied
   std::vector<uint64_t *> copy_left_data_, copy_right_data_;
 
- private:
+private:
   /// Copy tuple to result
   void copy2Result(uint64_t left_id, uint64_t right_id);
 
   void copy2ResultInting(uint64_t left_id, uint64_t right_id, uint64_t index);
 
-  void runTask(uint64_t lowerBound, uint64_t upperBound, int index, uint64_t* right_key_column);
+  void runTask(uint64_t lowerBound, uint64_t upperBound, int index, uint64_t *right_key_column);
 
   void mergeIntingTmpResults();
   /// Create mapping for bindings
   void createMappingForBindings();
 
- public:
+public:
   /// The constructor
   Join(std::unique_ptr<Operator> &&left,
        std::unique_ptr<Operator> &&right,
        const PredicateInfo &p_info)
-      : left_(std::move(left)), right_(std::move(right)), p_info_(p_info) {};
+      : left_(std::move(left)), right_(std::move(right)), p_info_(p_info){};
   /// Require a column and add it to results
   bool require(SelectInfo info) override;
   /// Run
@@ -167,8 +177,9 @@ class Join : public Operator {
   void run() override;
 };
 
-class SelfJoin : public Operator {
- private:
+class SelfJoin : public Operator
+{
+private:
   /// The input operators
   std::unique_ptr<Operator> input_;
   /// The join predicate info
@@ -181,22 +192,30 @@ class SelfJoin : public Operator {
   /// The input data that has to be copied
   std::vector<uint64_t *> copy_data_;
 
- private:
+private:
   /// Copy tuple to result
   void copy2Result(uint64_t id);
 
- public:
+  void copy2ResultInting(uint64_t i, int threadIndex);
+
+  void runTask(uint64_t lowerBound, uint64_t upperBound, int index, uint64_t *left_key_column, uint64_t *right_key_column);
+
+  void mergeIntingTmpResults();
+
+public:
   /// The constructor
   SelfJoin(std::unique_ptr<Operator> &&input, PredicateInfo &p_info)
-      : input_(std::move(input)), p_info_(p_info) {};
+      : input_(std::move(input)), p_info_(p_info){};
+
   /// Require a column and add it to results
   bool require(SelectInfo info) override;
   /// Run
   void run() override;
 };
 
-class Checksum : public Operator {
- private:
+class Checksum : public Operator
+{
+private:
   /// The input operator
   std::unique_ptr<Operator> input_;
   /// The join predicate info
@@ -204,13 +223,14 @@ class Checksum : public Operator {
 
   std::vector<uint64_t> check_sums_;
 
- public:
+public:
   /// The constructor
   Checksum(std::unique_ptr<Operator> &&input,
            std::vector<SelectInfo> col_info)
-      : input_(std::move(input)), col_info_(std::move(col_info)) {};
+      : input_(std::move(input)), col_info_(std::move(col_info)){};
   /// Request a column and add it to results
-  bool require(SelectInfo info) override {
+  bool require(SelectInfo info) override
+  {
     // check sum is always on the highest level
     // and thus should never request anything
     throw;
@@ -220,4 +240,3 @@ class Checksum : public Operator {
 
   const std::vector<uint64_t> &check_sums() { return check_sums_; }
 };
-
