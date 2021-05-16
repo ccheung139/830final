@@ -137,6 +137,8 @@ class Join : public Operator {
   void copy2Result(uint64_t left_id, uint64_t right_id);
 
   void copy2ResultInting(uint64_t left_id, uint64_t right_id, uint64_t index);
+
+  void mergeIntingTmpResults();
   /// Create mapping for bindings
   void createMappingForBindings();
 

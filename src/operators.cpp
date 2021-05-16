@@ -132,6 +132,18 @@ void Join::copy2ResultInting(uint64_t left_id, uint64_t right_id, uint64_t index
   ++result_size_;
 }
 
+void Join::mergeIntingTmpResults() {
+  for (int col = 0; col < inting_tmp_results_[0].size(); col++) {
+    unsigned rel_col_id = 0;
+    for (int threadIdx = 0; threadIdx < inting_tmp_results_.size(); threadIdx++) {
+      auto data = inting_tmp_results_[threadIdx][col];
+      for (int row = 0; row < data.size(); row++) {
+        tmp_results_[rel_col_id++].push_back(data[row]);
+      }
+    }
+  }
+}
+
 // Copy to result
 void Join::copy2Result(uint64_t left_id, uint64_t right_id)
 {
@@ -199,6 +211,7 @@ void Join::run()
   auto right_key_column = right_input_data[right_col_id];
 
   int NUM_THREADS = 16;
+  inting_tmp_results_.resize(16);
   uint64_t limit = right_->result_size();
   int size = limit / (NUM_THREADS);
 
@@ -213,10 +226,10 @@ void Join::run()
     {
       upperBound = size * (j + 1);
     }
+    //spin up thread
     for (uint64_t i = j*size; i < upperBound; ++i)
     {
 
-      //spin up thread
       // 209 - 215 into function
       auto rightKey = right_key_column[i];
       auto range = hash_table_.equal_range(rightKey);
@@ -226,9 +239,6 @@ void Join::run()
       }
     }
   }
-
-
-
   // for (uint64_t i = 0; i != limit; ++i) {
   //   auto rightKey = right_key_column[i];
   //   auto range = hash_table_.equal_range(rightKey);
@@ -236,6 +246,7 @@ void Join::run()
   //     copy2Result(iter->second, i);
   //   }
   // }
+  mergeIntingTmpResults();
 }
 
 // Copy to result
