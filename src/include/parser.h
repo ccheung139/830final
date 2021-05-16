@@ -27,7 +27,8 @@ struct SelectInfo {
   }
   /// Less Operator
   inline bool operator<(const SelectInfo &o) const {
-    return binding < o.binding || col_id < o.col_id;
+    // return binding < o.binding || col_id < o.col_id;
+    return std::tie(rel_id, binding, col_id) < std::tie(o.rel_id, o.binding, o.col_id);
   }
 
   /// Dump text format
