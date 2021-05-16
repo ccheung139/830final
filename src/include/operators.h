@@ -25,6 +25,7 @@ struct hash<SelectInfo> {
 /// Operators materialize their entire result
 class Operator {
  protected:
+  int NUM_THREADS = 16;
   /// Mapping from select info to data
   std::unordered_map<SelectInfo, unsigned> select_to_result_col_id_;
   /// The materialized results
@@ -90,6 +91,12 @@ class FilterScan : public Scan {
   bool applyFilter(uint64_t id, FilterInfo &f);
   /// Copy tuple to result
   void copy2Result(uint64_t id);
+
+  void runTask(uint64_t lowerBound, uint64_t upperBound, int index);
+
+  void copy2ResultInting(uint64_t index, uint64_t id);
+
+  void mergeIntingTmpResults();
 
  public:
   /// The constructor
