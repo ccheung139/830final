@@ -124,7 +124,7 @@ bool Join::require(SelectInfo info)
 // Copy to result
 void Join::copy2ResultInting(uint64_t left_id, uint64_t right_id, uint64_t index)
 {
-  std::cerr << "INDEX: " << index << std::endl;
+  // std::cerr << "INDEX: " << index << std::endl;
   unsigned rel_col_id = 0;
   for (unsigned cId = 0; cId < copy_left_data_.size(); ++cId)
   {
@@ -148,16 +148,14 @@ void Join::mergeIntingTmpResults()
 {
   for (int col = 0; col < inting_tmp_results_[0].size(); col++)
   {
-    unsigned rel_col_id = 0;
     for (int threadIdx = 0; threadIdx < inting_tmp_results_.size(); threadIdx++)
     {
       auto data = inting_tmp_results_[threadIdx][col];
       for (int row = 0; row < data.size(); row++)
       {
-        tmp_results_[rel_col_id].push_back(data[row]);
+        tmp_results_[col].push_back(data[row]);
       }
     }
-    rel_col_id++;
   }
 }
 
@@ -254,7 +252,6 @@ void Join::run()
     //spin up thread
     for (uint64_t i = j * size; i < upperBound; ++i)
     {
-       std::cerr << i << std::endl;
       // 209 - 215 into function
       auto rightKey = right_key_column[i];
       auto range = hash_table_.equal_range(rightKey);

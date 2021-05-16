@@ -99,7 +99,6 @@ std::string Joiner::join(QueryInfo &query)
 
   // enum Comparison : char { Less = '<', Greater = '>', Equal = '=' };
 
-  std::cerr << histogramList[0].size() << std::endl;
   // auto relation_ids = query.relation_ids();
   // for (unsigned i = 0; i < relation_ids.size(); ++i)
   // {
