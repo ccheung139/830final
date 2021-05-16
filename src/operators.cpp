@@ -127,10 +127,20 @@ void Join::copy2ResultInting(uint64_t left_id, uint64_t right_id, uint64_t index
   std::cerr << "INDEX: " << index << std::endl;
   unsigned rel_col_id = 0;
   for (unsigned cId = 0; cId < copy_left_data_.size(); ++cId)
+  {
+    // std::cerr << "first1: " << inting_tmp_results_[index].size() << std::endl;
+    // std::cerr << "second1: " << rel_col_id << std::endl;
+
+
     inting_tmp_results_[index][rel_col_id++].push_back(copy_left_data_[cId][left_id]);
+  }
 
   for (unsigned cId = 0; cId < copy_right_data_.size(); ++cId)
+  {
+    // std::cerr << "first2: " << inting_tmp_results_[index].size() << std::endl;
+    // std::cerr << "second2: " << rel_col_id << std::endl;
     inting_tmp_results_[index][rel_col_id++].push_back(copy_right_data_[cId][right_id]);
+  }
   ++result_size_;
 }
 
@@ -218,9 +228,12 @@ void Join::run()
 
   int NUM_THREADS = 16;
   inting_tmp_results_.resize(NUM_THREADS);
+
+  int randomSize = copy_left_data_.size() + copy_right_data_.size();
+
   for (int i = 0; i < inting_tmp_results_.size(); i++)
   {
-    inting_tmp_results_[i].emplace_back();
+    inting_tmp_results_[i].resize(randomSize*2);
   }
 
   uint64_t limit = right_->result_size();
@@ -250,6 +263,8 @@ void Join::run()
       }
     }
   }
+
+  std::cerr << "reached here" << std::endl;
 
   // for (uint64_t i = 0; i != limit; ++i) {
   //   auto rightKey = right_key_column[i];
