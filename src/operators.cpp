@@ -229,16 +229,22 @@ void Join::mergeIntingTmpResults(int col)
   // }
 }
 
-void SelfJoin::mergeIntingTmpResults()
+void SelfJoin::mergeIntingTmpResults(int col)
 {
-  for (int col = 0; col < tmp_results_.size(); ++col)
-  {
-    for (int threadIdx = 0; threadIdx < inting_tmp_results_.size(); ++threadIdx)
+  for (int threadIdx = 0; threadIdx < inting_tmp_results_.size(); ++threadIdx)
     {
       auto data = inting_tmp_results_[threadIdx][col];
       tmp_results_[col].insert(tmp_results_[col].end(), data.begin(), data.end());
     }
-  }
+
+  // for (int col = 0; col < tmp_results_.size(); ++col)
+  // {
+  //   for (int threadIdx = 0; threadIdx < inting_tmp_results_.size(); ++threadIdx)
+  //   {
+  //     auto data = inting_tmp_results_[threadIdx][col];
+  //     tmp_results_[col].insert(tmp_results_[col].end(), data.begin(), data.end());
+  //   }
+  // }
 }
 
 // Copy to result
@@ -263,12 +269,8 @@ void Join::run()
 {
   left_->require(p_info_.left);
   right_->require(p_info_.right);
-  // std::thread tLeft([this]() -> void { left_->run(); });
-  // std::thread tRight([this]() -> void { right_->run(); });
   left_->run();
   right_->run();
-  // tLeft.join();
-  // tRight.join();
 
   // Use smaller input_ for build
   if (left_->result_size() > right_->result_size())
@@ -457,7 +459,15 @@ void SelfJoin::run()
     thread.join();
   }
 
-  mergeIntingTmpResults();
+  threads.clear();
+  for (int col = 0; col < tmp_results_.size() - 1; ++col) {
+    threads.push_back(std::thread(&SelfJoin::mergeIntingTmpResults, this, col));
+  }
+  mergeIntingTmpResults(tmp_results_.size() - 1);
+  for (auto& thread : threads) {
+    thread.join();
+  }
+
   result_size_ = tmp_results_[0].size();
   // for (uint64_t i = 0; i < input_->result_size(); ++i)
   // {

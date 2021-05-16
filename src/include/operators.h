@@ -20,7 +20,8 @@ struct hash<SelectInfo>
 {
   std::size_t operator()(SelectInfo const &s) const noexcept
   {
-    return s.binding ^ (s.col_id << 5);
+    return s.col_id*2654435761 % 2^32;
+    // return s.binding ^ (s.col_id << 5);
   }
 };
 }; // namespace std
@@ -200,7 +201,7 @@ private:
 
   void runTask(uint64_t lowerBound, uint64_t upperBound, int index, uint64_t *left_key_column, uint64_t *right_key_column);
 
-  void mergeIntingTmpResults();
+  void mergeIntingTmpResults(int col);
 
 public:
   /// The constructor
