@@ -118,7 +118,7 @@ void Relation::loadRelation(const char *file_name)
   }
 
   Joiner::appendHistogram(histogramsForRelation);
-
+  Joiner::appendRelationSize(size_);
   // std::vector<int> firstColVals = getColVals(0);
   // std::vector<int> histogram = constructHistogram(firstColVals);
 
