@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 #include <set>
+#include <thread>
 
 #include "relation.h"
 #include "parser.h"
@@ -20,7 +21,7 @@ struct hash<SelectInfo>
 {
   std::size_t operator()(SelectInfo const &s) const noexcept
   {
-    return s.binding ^ s.col_id*2654435761 % 2^32;
+    return (s.binding ^ s.col_id)*2654435761 % 2^32;
     // return s.binding ^ (s.col_id << 5);
   }
 };
@@ -29,7 +30,7 @@ struct hash<SelectInfo>
 /// Operators materialize their entire result
 class Operator {
  protected:
-  int NUM_THREADS = 8;
+  int NUM_THREADS = 24;
   /// Mapping from select info to data
   std::unordered_map<SelectInfo, unsigned> select_to_result_col_id_;
   /// The materialized results
