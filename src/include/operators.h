@@ -66,6 +66,8 @@ public:
   virtual std::vector<uint64_t *> getResults();
 
   uint64_t result_size() const { return result_size_; }
+
+  static void appendHashTables(std::vector<std::map<int, std::vector<int>>> hashTables);
 };
 
 class Scan : public Operator

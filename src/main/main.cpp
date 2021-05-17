@@ -13,6 +13,8 @@ int main(int argc, char *argv[]) {
     joiner.addRelation(line.c_str());
   }
 
+  // joiner.
+
   // now we construct filterSelectivites
 
   // Preparation phase (not timed)

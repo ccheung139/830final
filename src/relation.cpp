@@ -1,5 +1,7 @@
 #include "relation.h"
 #include "joiner.h"
+#include "operators.h"
+#include <map>
 
 #include <fcntl.h>
 #include <iostream>
@@ -109,6 +111,9 @@ void Relation::loadRelation(const char *file_name)
 
   std::vector<std::vector<int>> histogramsForRelation;
 
+  // hashtable = makeHashTables()
+  // Operators::store
+
   for (int c = 0; c < this->columns_.size(); c++)
   {
     std::vector<int> colVals = getColVals(c);
@@ -118,6 +123,12 @@ void Relation::loadRelation(const char *file_name)
   }
 
   Joiner::appendHistogram(histogramsForRelation);
+
+  std::vector<std::map<int, std::vector<int>>> hashTables = makeHashTables();
+  // std::cerr << hashTables[0].size() << std::endl;
+
+  Operator::appendHashTables(hashTables);
+
 
   // std::vector<int> firstColVals = getColVals(0);
   // std::vector<int> histogram = constructHistogram(firstColVals);
@@ -143,6 +154,37 @@ void Relation::loadRelation(const char *file_name)
   //   std::cout << c[j] << std::endl;
   //   // }
   // }
+}
+
+std::vector<std::map<int, std::vector<int>>> Relation::makeHashTables()
+{
+  std::vector<std::map<int, std::vector<int>>> result;
+  for (int c = 0; c < this->columns_.size(); ++c)
+  {
+    std::vector<int> colVals = getColVals(c);
+    std::map<int, std::vector<int>> hashTable;
+
+    for (int i = 0; i < colVals.size(); ++i)
+    {
+      int colVal = colVals[i];
+      if (hashTable.count(colVal))
+      {
+        auto f = hashTable.find(colVal);
+        std::vector<int> indices = f->second;
+        indices.push_back(i);
+        // hashTable.put
+      }
+      else
+      {
+        std::vector<int> indices;
+        indices.push_back(i);
+        hashTable.insert(std::pair<int, std::vector<int>>(colVal, indices));
+      }
+    }
+
+    result.push_back(hashTable);
+  }
+  return result;
 }
 
 std::vector<int> Relation::getColVals(int colIdx)

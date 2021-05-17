@@ -1,5 +1,6 @@
 #pragma once
 
+#include <map>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -56,4 +57,6 @@ private:
 
   // Returns the histogram with colVals passed in (result of calling getColVals)
   std::vector<int> constructHistogram(const std::vector<int> colVals);
+
+  std::vector<std::map<int, std::vector<int>>> makeHashTables();
 };

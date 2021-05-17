@@ -15,6 +15,12 @@ std::vector<uint64_t *> Operator::getResults()
   return result_vector;
 }
 
+std::vector<std::vector<std::map<int, std::vector<int>>>> allHashTables;
+
+void Operator::appendHashTables(std::vector<std::map<int, std::vector<int>>> hashTables) {
+  allHashTables.push_back(hashTables);
+}
+
 // Require a column and add it to results
 bool Scan::require(SelectInfo info)
 {
