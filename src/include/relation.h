@@ -17,6 +17,8 @@ private:
   /// The join column containing the keys
   std::vector<uint64_t *> columns_;
 
+  std::tuple<std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<std::vector<std::vector<uint64_t>>>> hashStuff;
+
 public:
   /// Constructor without mmap
   Relation(uint64_t size, std::vector<uint64_t *> &&columns)
@@ -47,6 +49,11 @@ public:
   uint64_t size() const { return size_; }
   /// The join column containing the keys
   const std::vector<uint64_t *> &columns() const { return columns_; }
+
+  const std::tuple<std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<std::vector<std::vector<uint64_t>>>> &getHashStuff() const
+  {
+    return hashStuff;
+  }
 
   // const std::tuple<std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<std::vector<std::vector<uint64_t>>>>
   //     &hashTableAndSortedVals() const { return hashTableAndSortedVals_; }

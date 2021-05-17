@@ -128,6 +128,8 @@ void Relation::loadRelation(const char *file_name)
   std::tuple<std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<std::vector<std::vector<uint64_t>>>>
       hashTablesAndSortedVals = makeHashTables();
 
+  hashStuff = hashTablesAndSortedVals;
+
   // Operator::appendHashTablesAndSortedVals(hashTablesAndSortedVals);
 
   // hashTableAndSortedVals_ = hashTablesAndSortedVals;
