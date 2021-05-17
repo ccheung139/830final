@@ -323,7 +323,7 @@ void Join::run()
 
   limit = right_->result_size();
   size = limit / (NUM_THREADS);
-  #pragma omp parallel num_threads(NUM_THREADS - 1)
+  #pragma omp parallel num_threads(NUM_THREADS)
   {
     int j = omp_get_thread_num();
     if (j != NUM_THREADS - 1) {
