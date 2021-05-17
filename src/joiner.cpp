@@ -99,7 +99,7 @@ std::unique_ptr<Operator> Joiner::addScan(std::set<unsigned> &used_relations,
 double Joiner::isFilterScan(const SelectInfo &info, QueryInfo &query) {
   std::vector<FilterInfo> filters;
   // auto filters_copy = query.filters();
-   for (unsigned i = 0; i < filters_copy.size(); ++i)
+  for (unsigned i = 0; i < filters_copy.size(); ++i)
   {
     // std::cerr << filters_copy[i].selectivity << std::endl;
     if (filters_copy[i].filter_column.binding == info.binding)
@@ -269,7 +269,7 @@ double Joiner::estimateSelectivity(std::vector<int> histogram, uint64_t minVal, 
 {
   // std::cerr << "OPERATION: " << char(op) << " " << val << " " << minVal << " " << maxVal << std::endl;
 
-  int NUM_BUCKETS = 10;
+  int NUM_BUCKETS = 20;
   int bucketIndex = std::min(int((val - minVal) / bucketWidth), NUM_BUCKETS - 1);
 
   switch (op)

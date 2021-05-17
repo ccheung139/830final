@@ -2,7 +2,6 @@
 
 #include <cassert>
 #include <iostream>
-#include <omp.h>
 // Get materialized results
 std::vector<uint64_t *> Operator::getResults()
 {
@@ -122,19 +121,6 @@ void FilterScan::run()
     inting_tmp_results_.resize(NUM_THREADS);
 
     uint64_t size = relation_.size() / NUM_THREADS;
-    // #pragma omp parallel num_threads(NUM_THREADS - 1)
-    // {
-    //   int j = omp_get_thread_num();
-    //   #pragma inline
-    //   runTask(size * j, size * (j + 1), j);
-    // }
-    // runTask((NUM_THREADS - 1) * size, relation_.size(), NUM_THREADS - 1);
-    // #pragma omp parallel num_threads(tmp_results_.size())
-    // {
-    //   int col = omp_get_thread_num();
-    //   #pragma inline
-    //   mergeIntingTmpResults(col);
-    // }
     for (int i = 0; i < NUM_THREADS - 1; ++i) {
       threads.push_back(std::thread(&FilterScan::runTask, this, size * i, size * (i + 1), i));
     }
@@ -196,7 +182,9 @@ bool Join::require(SelectInfo info)
 // Copy to result
 void Join::copy2ResultInting(uint64_t left_id, uint64_t right_id, uint64_t index)
 {
-  // std::cerr << "INDEX: " << index << std::endl;
+  // left_inting_tmp_results_[index].push_back(left_id);
+  // right_inting_tmp_results_[index].push_back(right_id);
+
   unsigned rel_col_id = 0;
   for (unsigned cId = 0; cId < copy_left_data_.size(); ++cId)
   {
@@ -207,53 +195,42 @@ void Join::copy2ResultInting(uint64_t left_id, uint64_t right_id, uint64_t index
   {
     inting_tmp_results_[index][rel_col_id++].push_back(copy_right_data_[cId][right_id]);
   }
-  // ++inting_result_sizes_[index];
 }
 
 void Join::mergeIntingTmpResults(int col)
 {
-  // for (int col = 0; col < tmp_results_.size(); ++col)
-  // {
-  //   for (int threadIdx = 0; threadIdx < inting_tmp_results_.size(); ++threadIdx)
-  //   {
-  //     auto data = inting_tmp_results_[threadIdx][col];
-  //     tmp_results_[col].insert( tmp_results_[col].end(), data.begin(), data.end());
-  //   }
-  // }
-  
-  // // might want to add this step to the loop above for performance gains later
-  // for (int threadIdx = 0; threadIdx < inting_result_sizes_.size(); ++threadIdx) {
-  //   result_size_ += inting_result_sizes_[threadIdx];
-  // }
   for (int threadIdx = 0; threadIdx < inting_tmp_results_.size(); ++threadIdx)
     {
       auto data = inting_tmp_results_[threadIdx][col];
       tmp_results_[col].insert(tmp_results_[col].end(), data.begin(), data.end());
     }
-
-  // might want to add this step to the loop above for performance gains later
-  // for (int threadIdx = 0; threadIdx < inting_result_sizes_.size(); ++threadIdx)
-  // {
-  //   result_size_ += inting_result_sizes_[threadIdx];
-  // }
 }
+
+// void Join::mergeIntingTmpResultsLeft(int col)
+// {
+//   for (int threadIdx = 0; threadIdx < NUM_THREADS; ++threadIdx) {
+//     for (int i = 0; i < left_inting_tmp_results_[threadIdx].size(); ++i) {
+//       tmp_results_[col].push_back(copy_left_data_[col][left_inting_tmp_results_[threadIdx][i]]);
+//     }
+//   }
+// }
+
+// void Join::mergeIntingTmpResultsRight(int col)
+// {
+//   for (int threadIdx = 0; threadIdx < NUM_THREADS; ++threadIdx) {
+//     for (int i = 0; i < left_inting_tmp_results_[threadIdx].size(); ++i) {
+//       tmp_results_[col].push_back(copy_right_data_[col - copy_left_data_.size()][right_inting_tmp_results_[threadIdx][i]]);
+//     }
+//   }
+// }
 
 void SelfJoin::mergeIntingTmpResults(int col)
 {
-  for (int threadIdx = 0; threadIdx < inting_tmp_results_.size(); ++threadIdx)
+  for (int threadIdx = 0; threadIdx < NUM_THREADS; ++threadIdx)
     {
       auto data = inting_tmp_results_[threadIdx][col];
       tmp_results_[col].insert(tmp_results_[col].end(), data.begin(), data.end());
     }
-
-  // for (int col = 0; col < tmp_results_.size(); ++col)
-  // {
-  //   for (int threadIdx = 0; threadIdx < inting_tmp_results_.size(); ++threadIdx)
-  //   {
-  //     auto data = inting_tmp_results_[threadIdx][col];
-  //     tmp_results_[col].insert(tmp_results_[col].end(), data.begin(), data.end());
-  //   }
-  // }
 }
 
 // Copy to result
@@ -273,8 +250,9 @@ void Join::run()
 {
   left_->require(p_info_.left);
   right_->require(p_info_.right);
-  left_->run();
   right_->run();
+  left_->run();
+  
 
   // Use smaller input_ for build
   if (left_->result_size() > right_->result_size())
@@ -316,39 +294,51 @@ void Join::run()
   auto right_key_column = right_input_data[right_col_id];
 
   inting_tmp_results_.resize(NUM_THREADS);
-  // inting_result_sizes_.resize(NUM_THREADS);
+  // left_inting_tmp_results_.resize(NUM_THREADS);
+  // right_inting_tmp_results_.resize(NUM_THREADS);
 
   limit = right_->result_size();
   size = limit / (NUM_THREADS);
-  // #pragma omp parallel num_threads(NUM_THREADS - 1)
-  // {
-  //   int j = omp_get_thread_num();
-  //   #pragma inline
-  //   runTask(j * size, size * (j + 1), j, right_key_column);
-  // }
-  // runTask((NUM_THREADS - 1) * size, limit, NUM_THREADS - 1, right_key_column);
-  // #pragma omp parallel num_threads(tmp_results_.size())
-  // {
-  //   int thread_id = omp_get_thread_num();
-  //   #pragma inline
-  //   mergeIntingTmpResults(thread_id);
-  // }
-  for (int j = 0; j < NUM_THREADS - 1; j++)
-  {
-    threads.push_back(std::thread(&Join::runTask, this, j * size, size * (j + 1), j, right_key_column));
-  }
-  runTask((NUM_THREADS - 1) * size, limit, NUM_THREADS - 1, right_key_column);
-  for (auto &thread : threads)
-  {
-    thread.join();
-  }
-  threads.clear();
-  for (int col = 0; col < tmp_results_.size() - 1; ++col) {
-    threads.push_back(std::thread(&Join::mergeIntingTmpResults, this, col));
-  }
-  mergeIntingTmpResults(tmp_results_.size() - 1);
-  for (auto& thread : threads) {
-    thread.join();
+  if (right_->result_size() > 1000) {
+    
+    for (int j = 0; j < NUM_THREADS - 1; j++)
+    {
+      threads.push_back(std::thread(&Join::runTask, this, j * size, size * (j + 1), j, right_key_column));
+    }
+    runTask((NUM_THREADS - 1) * size, limit, NUM_THREADS - 1, right_key_column);
+    for (auto &thread : threads)
+    {
+      thread.join();
+    }
+
+    threads.clear();
+    for (int col = 0; col < tmp_results_.size() - 1; ++col) {
+      threads.push_back(std::thread(&Join::mergeIntingTmpResults, this, col));
+    }
+    mergeIntingTmpResults(tmp_results_.size() - 1);
+
+    // for (int col = 0; col < copy_left_data_.size(); ++col) {
+    //   threads.push_back(std::thread(&Join::mergeIntingTmpResultsLeft, this, col));
+    //   // mergeIntingTmpResultsLeft(col);
+    // }
+    // // mergeIntingTmpResultsLeft(copy_left_data_.size());
+    
+    // for (int col = copy_left_data_.size(); col < tmp_results_.size(); ++col) {
+    //   threads.push_back(std::thread(&Join::mergeIntingTmpResultsRight, this, col));
+    //   // mergeIntingTmpResultsRight(col);
+    // }
+    for (auto& thread : threads) {
+      thread.join();
+    }
+  } else {
+    auto right_key_column = right_input_data[right_col_id];
+    for (uint64_t i = 0, limit = i + right_->result_size(); i != limit; ++i) {
+      auto rightKey = right_key_column[i];
+      auto range = hash_table_.equal_range(rightKey);
+      for (auto iter = range.first; iter != range.second; ++iter) {
+        copy2Result(iter->second, i);
+      }
+    }
   }
   result_size_ = tmp_results_[0].size();
 }
@@ -358,21 +348,12 @@ void Join::runTask(uint64_t lowerBound, uint64_t upperBound, int index, uint64_t
   inting_tmp_results_[index].resize(tmp_results_.size());
   for (uint64_t i = lowerBound; i < upperBound; ++i)
   {
-    // 209 - 215 into function
     auto rightKey = right_key_column[i];
     auto range = hash_table_.equal_range(rightKey);
     for (auto iter = range.first; iter != range.second; ++iter)
     {
       copy2ResultInting(iter->second, i, index);
     }
-  }
-}
-
-void Join::buildHashTable(uint64_t lowerBound, uint64_t upperBound, int index, uint64_t *left_key_column)
-{
-  for (uint64_t i = lowerBound; i < upperBound; ++i)
-  {
-    hash_table_.emplace(left_key_column[i], i);
   }
 }
 
@@ -384,8 +365,6 @@ void SelfJoin::copy2ResultInting(uint64_t i, int threadIndex)
   {
     inting_tmp_results_[threadIndex][rel_col_id++].push_back(copy_data_[cId][i]);
   }
-
-  // ++inting_result_sizes_[threadIndex];
 }
 
 void SelfJoin::runTask(uint64_t lowerBound, uint64_t upperBound, int index, uint64_t *left_key_column, uint64_t *right_key_column)
@@ -448,38 +427,32 @@ void SelfJoin::run()
   uint64_t limit = input_->result_size();
 
   uint64_t size = limit / (NUM_THREADS);
-  // #pragma omp parallel num_threads(NUM_THREADS - 1)
-  // {
-  //   int j = omp_get_thread_num();
-  //   #pragma inline
-  //   runTask(j * size, size * (j + 1), j, left_col, right_col);
-  // }
-  // runTask((NUM_THREADS - 1) * size, limit, NUM_THREADS - 1, left_col, right_col);
-  // #pragma omp parallel num_threads(tmp_results_.size())
-  // {
-  //   int col = omp_get_thread_num();
-  //   #pragma inline
-  //   mergeIntingTmpResults(col);
-  // }
+  if (limit > 1000) {
+    for (int j = 0; j < NUM_THREADS - 1; j++)
+    {
+      threads.push_back(std::thread(&SelfJoin::runTask, this, j * size, size * (j + 1), j, left_col, right_col));
+    }
+    runTask((NUM_THREADS - 1) * size, limit, NUM_THREADS - 1, left_col, right_col);
+    for (auto &thread : threads)
+    {
+      thread.join();
+    }
 
-  for (int j = 0; j < NUM_THREADS - 1; j++)
-  {
-    threads.push_back(std::thread(&SelfJoin::runTask, this, j * size, size * (j + 1), j, left_col, right_col));
+    threads.clear();
+    for (int col = 0; col < tmp_results_.size() - 1; ++col) {
+      threads.push_back(std::thread(&SelfJoin::mergeIntingTmpResults, this, col));
+    }
+    mergeIntingTmpResults(tmp_results_.size() - 1);
+    for (auto& thread : threads) {
+      thread.join();
+    }
+  } else {
+    for (uint64_t i = 0; i < input_->result_size(); ++i) {
+      if (left_col[i] == right_col[i])
+        copy2Result(i);
+    }
   }
-  runTask((NUM_THREADS - 1) * size, limit, NUM_THREADS - 1, left_col, right_col);
-  for (auto &thread : threads)
-  {
-    thread.join();
-  }
-
-  threads.clear();
-  for (int col = 0; col < tmp_results_.size() - 1; ++col) {
-    threads.push_back(std::thread(&SelfJoin::mergeIntingTmpResults, this, col));
-  }
-  mergeIntingTmpResults(tmp_results_.size() - 1);
-  for (auto& thread : threads) {
-    thread.join();
-  }
+  
   result_size_ = tmp_results_[0].size();
 }
 

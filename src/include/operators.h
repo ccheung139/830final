@@ -21,7 +21,7 @@ struct hash<SelectInfo>
 {
   std::size_t operator()(SelectInfo const &s) const noexcept
   {
-    return (s.binding ^ s.col_id)*2654435761 % 2^32;
+    return (s.binding ^ s.col_id)*2654435761 % 4294967296;
     // return s.binding ^ (s.col_id << 5);
   }
 };
@@ -40,6 +40,9 @@ class Operator {
 
   // The temp temp results lol
   std::vector<std::vector<std::vector<uint64_t>>> inting_tmp_results_;
+
+  // std::vector<std::vector<uint64_t>> left_inting_tmp_results_;
+  // std::vector<std::vector<uint64_t>> right_inting_tmp_results_;
 
   // result sizes gathered by each thread
   // std::vector<uint64_t> inting_result_sizes_;
@@ -165,6 +168,10 @@ private:
   void buildHashTable(uint64_t lowerBound, uint64_t upperBound, int index, uint64_t *left_key_column);
 
   void mergeIntingTmpResults(int col);
+
+  void mergeIntingTmpResultsLeft(int col);
+
+  void mergeIntingTmpResultsRight(int col);
   /// Create mapping for bindings
   void createMappingForBindings();
 
