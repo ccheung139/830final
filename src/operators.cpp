@@ -326,9 +326,13 @@ void Join::run()
   #pragma omp parallel num_threads(NUM_THREADS - 1)
   {
     int j = omp_get_thread_num();
-    runTask(j * size, size * (j + 1), j, right_key_column);
+    if (j != NUM_THREADS - 1) {
+      runTask(j * size, size * (j + 1), j, right_key_column);
+    } else {
+      runTask((NUM_THREADS - 1) * size, limit, NUM_THREADS - 1, right_key_column);
+    }
   }
-  runTask((NUM_THREADS - 1) * size, limit, NUM_THREADS - 1, right_key_column);
+  
   // for (int j = 0; j < NUM_THREADS - 1; j++)
   // {
   //   threads.push_back(std::thread(&Join::runTask, this, j * size, size * (j + 1), j, right_key_column));
@@ -347,12 +351,11 @@ void Join::run()
   //     copy2Result(iter->second, i);
   //   }
   // }
-  #pragma omp parallel num_threads(tmp_results_.size() - 1)
+  #pragma omp parallel num_threads(tmp_results_.size())
   {
     int col = omp_get_thread_num();
     mergeIntingTmpResults(col);
   }
-  mergeIntingTmpResults(tmp_results_.size() - 1);
 
   // threads.clear();
   // for (int col = 0; col < tmp_results_.size() - 1; ++col) {
