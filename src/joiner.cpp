@@ -40,9 +40,9 @@ QueryGraphProvides analyzeInputOfJoin(std::set<unsigned> &usedRelations,
 
 } // namespace
 
-std::vector<std::vector<std::vector<int>>> histogramList;
+std::vector<std::vector<std::vector<uint64_t>>> histogramList;
 
-void Joiner::appendHistogram(std::vector<std::vector<int>> histogram)
+void Joiner::appendHistogram(std::vector<std::vector<uint64_t>> histogram)
 {
   histogramList.push_back(histogram);
 }
@@ -254,12 +254,12 @@ std::string Joiner::join(QueryInfo &query)
   return out.str();
 }
 
-double Joiner::estimateSelectivity(std::vector<int> histogram, int minVal, int maxVal, int bucketWidth, FilterInfo::Comparison op, uint64_t val, int nTups)
+double Joiner::estimateSelectivity(std::vector<uint64_t> histogram, uint64_t minVal, uint64_t maxVal, uint64_t bucketWidth, FilterInfo::Comparison op, uint64_t val, uint64_t nTups)
 {
   // std::cerr << "OPERATION: " << char(op) << std::endl;
 
-  int NUM_BUCKETS = 10;
-  int bucketIndex = std::min(int((val - minVal) / bucketWidth), NUM_BUCKETS - 1);
+  uint64_t NUM_BUCKETS = 10;
+  uint64_t bucketIndex = std::min(uint64_t((val - minVal) / bucketWidth), NUM_BUCKETS - 1);
 
   switch (op)
   {
@@ -281,7 +281,7 @@ double Joiner::estimateSelectivity(std::vector<int> histogram, int minVal, int m
     {
       return 0.0;
     }
-    int bucketMin = minVal + bucketWidth * bucketIndex;
+    uint64_t bucketMin = minVal + bucketWidth * bucketIndex;
     double proportionLessThan = (val - (float)bucketMin) / (float)bucketWidth;
     double runningSum =
         proportionLessThan *
@@ -289,7 +289,7 @@ double Joiner::estimateSelectivity(std::vector<int> histogram, int minVal, int m
 
     // std::cerr << "FIRST RUNNING SUM : " << runningSum << " BUCKET INDEX: " << bucketIndex << " BUCKET MIN " << bucketMin << " BUCKET WIDTH " << bucketWidth << std::endl;
 
-    for (int i = 0; i < bucketIndex; i++)
+    for (uint64_t i = 0; i < bucketIndex; i++)
     { 
       runningSum += 1.0 * histogram[i] / nTups;
     }

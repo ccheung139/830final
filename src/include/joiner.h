@@ -20,8 +20,8 @@ public:
   /// Add relation
   void addRelation(const char *file_name);
   void addRelation(Relation &&relation);
-  static void appendHistogram(std::vector<std::vector<int>> histogram);
-  double estimateSelectivity(std::vector<int> histogram, int minVal, int maxVal, int bucketWidth, FilterInfo::Comparison op, uint64_t val, int nTups);
+  static void appendHistogram(std::vector<std::vector<uint64_t>> histogram);
+  double estimateSelectivity(std::vector<uint64_t> histogram, uint64_t minVal, uint64_t maxVal, uint64_t bucketWidth, FilterInfo::Comparison op, uint64_t val, uint64_t nTups);
   /// Get relation
   const Relation &getRelation(unsigned relation_id);
   /// Joins a given set of relations

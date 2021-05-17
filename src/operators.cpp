@@ -120,6 +120,8 @@ void FilterScan::runTask(uint64_t lowerBound, uint64_t upperBound, int index)
   }
 }
 
+// void FilterScan::runWithHash(int index)
+
 // Run
 void FilterScan::run()
 {
@@ -128,6 +130,7 @@ void FilterScan::run()
     inting_tmp_results_.resize(NUM_THREADS);
 
     uint64_t size = relation_.size() / NUM_THREADS;
+
     // #pragma omp parallel num_threads(NUM_THREADS - 1)
     // {
     //   int j = omp_get_thread_num();
@@ -158,6 +161,7 @@ void FilterScan::run()
       thread.join();
     }
   } else {
+    // std::cerr << "here" << std::endl;
     for (uint64_t i = 0; i < relation_.size(); ++i)
     {
       bool pass = true;

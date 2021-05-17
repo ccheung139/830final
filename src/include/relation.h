@@ -53,10 +53,12 @@ private:
   void loadRelation(const char *file_name);
 
   // Returns all the values in a certain column specified by colIdx
-  std::vector<int> getColVals(const int colIdx);
+  std::vector<uint64_t> getColVals(const int colIdx);
 
   // Returns the histogram with colVals passed in (result of calling getColVals)
-  std::vector<int> constructHistogram(const std::vector<int> colVals);
+  std::vector<uint64_t> constructHistogram(const std::vector<uint64_t> colVals);
 
-  std::vector<std::map<int, std::vector<int>>> makeHashTables();
+  std::tuple<std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<std::map<uint64_t, std::vector<uint64_t>>>,
+           std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<uint64_t>, std::vector<uint64_t>>
+  makeHashTables();
 };

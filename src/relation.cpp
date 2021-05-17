@@ -2,6 +2,7 @@
 #include "joiner.h"
 #include "operators.h"
 #include <map>
+#include <algorithm>
 
 #include <fcntl.h>
 #include <iostream>
@@ -109,26 +110,27 @@ void Relation::loadRelation(const char *file_name)
     addr += size_ * sizeof(uint64_t);
   }
 
-  std::vector<std::vector<int>> histogramsForRelation;
+  std::vector<std::vector<uint64_t>> histogramsForRelation;
 
   // hashtable = makeHashTables()
   // Operators::store
 
   for (int c = 0; c < this->columns_.size(); c++)
   {
-    std::vector<int> colVals = getColVals(c);
-    std::vector<int> histogramForCol = constructHistogram(colVals);
+    std::vector<uint64_t> colVals = getColVals(c);
+    std::vector<uint64_t> histogramForCol = constructHistogram(colVals);
 
     histogramsForRelation.push_back(histogramForCol);
   }
 
   Joiner::appendHistogram(histogramsForRelation);
 
-  std::vector<std::map<int, std::vector<int>>> hashTables = makeHashTables();
+  // std::tuple<std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<std::map<uint64_t, std::vector<uint64_t>>>,
+  //            std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<uint64_t>, std::vector<uint64_t>>
+  //     hashTables = makeHashTables();
   // std::cerr << hashTables[0].size() << std::endl;
 
-  Operator::appendHashTables(hashTables);
-
+  // Operator::appendHashTables(hashTables);
 
   // std::vector<int> firstColVals = getColVals(0);
   // std::vector<int> histogram = constructHistogram(firstColVals);
@@ -156,42 +158,141 @@ void Relation::loadRelation(const char *file_name)
   // }
 }
 
-std::vector<std::map<int, std::vector<int>>> Relation::makeHashTables()
+/**
+ * 0: equals hashtables
+ *    vector of hashtables - for each column
+ * 1: greater than hashtables
+ * 2: less than hashtables
+ * 3: minimums
+ *    vector of minimum values - for each column
+ * 4: maximums
+ */
+std::tuple<std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<std::map<uint64_t, std::vector<uint64_t>>>,
+           std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<uint64_t>, std::vector<uint64_t>>
+Relation::makeHashTables()
 {
-  std::vector<std::map<int, std::vector<int>>> result;
-  for (int c = 0; c < this->columns_.size(); ++c)
-  {
-    std::vector<int> colVals = getColVals(c);
-    std::map<int, std::vector<int>> hashTable;
+  std::vector<std::map<uint64_t, std::vector<uint64_t>>> resultEquals;
+  std::vector<std::map<uint64_t, std::vector<uint64_t>>> resultGreaterThan;
+  std::vector<std::map<uint64_t, std::vector<uint64_t>>> resultLessThan;
+  std::vector<uint64_t> minimums;
+  std::vector<uint64_t> maximums;
 
-    for (int i = 0; i < colVals.size(); ++i)
+  for (uint64_t c = 0; c < this->columns_.size(); ++c)
+  {
+    std::vector<uint64_t> colVals = getColVals(c);
+    std::map<uint64_t, std::vector<uint64_t>> hashTable;
+    std::map<uint64_t, std::vector<uint64_t>> greaterThanHashTable;
+    std::map<uint64_t, std::vector<uint64_t>> lessThanHashTable;
+
+    std::vector<uint64_t> sortedColVals(colVals);
+    std::map<uint64_t, uint64_t> valToIndex;
+    // for (int i = 0; i < colVals.size())
+    std::sort(sortedColVals.begin(), sortedColVals.end());
+
+    uint64_t minimum = INT64_MAX;
+    uint64_t maximum = 0;
+    
+
+    for (uint64_t i = 0; i < colVals.size(); ++i)
     {
-      int colVal = colVals[i];
+      uint64_t colVal = colVals[i];
       if (hashTable.count(colVal))
       {
         auto f = hashTable.find(colVal);
-        std::vector<int> indices = f->second;
+        std::vector<uint64_t> indices = f->second;
         indices.push_back(i);
-        // hashTable.put
       }
       else
       {
-        std::vector<int> indices;
+        std::vector<uint64_t> indices;
         indices.push_back(i);
-        hashTable.insert(std::pair<int, std::vector<int>>(colVal, indices));
+        hashTable.insert(std::pair<uint64_t, std::vector<uint64_t>>(colVal, indices));
+      }
+
+      valToIndex.insert(std::pair<uint64_t, uint64_t>(colVal, i));
+      if (colVal < minimum)
+      {
+        minimum = colVal;
+      }
+      if (colVal > maximum)
+      {
+        maximum = colVal;
       }
     }
 
-    result.push_back(hashTable);
+    minimums.push_back(minimum);
+    maximums.push_back(maximum);
+    
+
+    std::vector<uint64_t> indicesLessThan;
+    for (uint64_t i = 0; i < sortedColVals.size(); ++i)
+    {
+      uint64_t colVal = sortedColVals[i];
+      std::vector<uint64_t> copyIndices(indicesLessThan);
+      lessThanHashTable.insert(std::pair<uint64_t, std::vector<uint64_t>>(colVal, copyIndices));
+      indicesLessThan.push_back(valToIndex.find(i)->second);
+    }
+
+    std::vector<uint64_t> lastIndicesListSeen;
+    for (uint64_t i = minimum; i <= maximum; ++i)
+    {
+      if (lessThanHashTable.count(i))
+      {
+        // auto f = lessThanHashTable.find(i);
+        lastIndicesListSeen = lessThanHashTable.find(i)->second;
+      }
+      else
+      {
+        lessThanHashTable.insert(std::pair<uint64_t, std::vector<uint64_t>>(i, lastIndicesListSeen));
+      }
+    }
+
+    std::vector<uint64_t> indicesGreaterThan;
+  
+    for (uint64_t j; j > -1; --j)
+    {
+      std::cerr << "j : " <<  j << std::endl;
+      uint64_t colVal = sortedColVals[j];
+      std::vector<uint64_t> copyIndices(indicesGreaterThan);
+      greaterThanHashTable.insert(std::pair<uint64_t, std::vector<uint64_t>>(colVal, copyIndices));
+      indicesGreaterThan.push_back(valToIndex.find(j)->second);
+    }
+
+    std::vector<uint64_t> lastIndicesListSeenGreater;
+    for (uint64_t i = maximum; i >= minimum; --i)
+    {
+      if (greaterThanHashTable.count(i))
+      {
+        lastIndicesListSeenGreater = greaterThanHashTable.find(i)->second;
+      }
+      else
+      {
+        greaterThanHashTable.insert(std::pair<uint64_t, std::vector<uint64_t>>(i, lastIndicesListSeenGreater));
+      }
+    }
+
+    resultEquals.push_back(hashTable);
+    resultLessThan.push_back(lessThanHashTable);
+    resultGreaterThan.push_back(greaterThanHashTable);
   }
-  return result;
+
+  return std::make_tuple(resultEquals, resultGreaterThan, resultLessThan, minimums, maximums);
 }
 
-std::vector<int> Relation::getColVals(int colIdx)
+// sortedColVals
+// 0, 5
+// 1, 2
+// 4, 10
+
+// 0, []
+// 1, [5]
+// 4, [5, 2]
+
+std::vector<uint64_t> Relation::getColVals(int colIdx)
 {
-  std::vector<int> colVals(this->size_, 0);
+  std::vector<uint64_t> colVals(this->size_, 0);
   auto &c(this->columns_[colIdx]);
-  for (int j = 0; j < this->size_; j++)
+  for (uint64_t j = 0; j < this->size_; j++)
   {
     colVals[j] = c[j];
   }
@@ -199,26 +300,26 @@ std::vector<int> Relation::getColVals(int colIdx)
   return colVals;
 }
 
-std::vector<int> Relation::constructHistogram(std::vector<int> colVals)
+std::vector<uint64_t> Relation::constructHistogram(std::vector<uint64_t> colVals)
 {
 
-  int minVal, maxVal = colVals[0];
+  uint64_t minVal, maxVal = colVals[0];
 
-  for (int colVal : colVals)
+  for (uint64_t colVal : colVals)
   {
     minVal = std::min(colVal, minVal);
     maxVal = std::max(colVal, maxVal);
   }
 
-  int bucketWidth = (1 + maxVal - minVal) / NUM_BUCKETS;
-  bucketWidth = std::max(1, bucketWidth); // Incase width gets integer divisioned down to 0
+  uint64_t bucketWidth = (1 + maxVal - minVal) / NUM_BUCKETS;
+  // bucketWidth = std::max(1, bucketWidth); // Incase width gets integer divisioned down to 0
 
-  std::vector<int> histogram(NUM_BUCKETS, 0);
+  std::vector<uint64_t> histogram(NUM_BUCKETS, 0);
 
   // A bit of repeated work as before when getting min and maxes (may be better to combine into one)
-  for (int &colVal : colVals)
+  for (uint64_t &colVal : colVals)
   {
-    int bucket = (colVal - minVal) / bucketWidth;
+    uint64_t bucket = (colVal - minVal) / bucketWidth;
     if (bucket >= NUM_BUCKETS)
     {
       bucket = NUM_BUCKETS - 1; // If overflow, just fit it into last bucket
