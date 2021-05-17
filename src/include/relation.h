@@ -48,6 +48,9 @@ public:
   /// The join column containing the keys
   const std::vector<uint64_t *> &columns() const { return columns_; }
 
+  // const std::tuple<std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<std::vector<std::vector<uint64_t>>>>
+  //     &hashTableAndSortedVals() const { return hashTableAndSortedVals_; }
+
 private:
   /// Loads data from a file
   void loadRelation(const char *file_name);
@@ -58,7 +61,6 @@ private:
   // Returns the histogram with colVals passed in (result of calling getColVals)
   std::vector<uint64_t> constructHistogram(const std::vector<uint64_t> colVals);
 
-  std::tuple<std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<std::map<uint64_t, std::vector<uint64_t>>>,
-           std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<uint64_t>, std::vector<uint64_t>>
+  std::tuple<std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<std::vector<std::vector<uint64_t>>>>
   makeHashTables();
 };

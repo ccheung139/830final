@@ -21,15 +21,16 @@ struct hash<SelectInfo>
 {
   std::size_t operator()(SelectInfo const &s) const noexcept
   {
-    return (s.binding ^ s.col_id)*2654435761 % 2^32;
+    return (s.binding ^ s.col_id) * 2654435761 % 2 ^ 32;
     // return s.binding ^ (s.col_id << 5);
   }
 };
 }; // namespace std
 
 /// Operators materialize their entire result
-class Operator {
- protected:
+class Operator
+{
+protected:
   int NUM_THREADS = 24;
   /// Mapping from select info to data
   std::unordered_map<SelectInfo, unsigned> select_to_result_col_id_;
@@ -67,7 +68,7 @@ public:
 
   uint64_t result_size() const { return result_size_; }
 
-  static void appendHashTables(std::vector<std::map<int, std::vector<int>>> hashTables);
+  static void appendHashTablesAndSortedVals(std::vector<std::map<int, std::vector<int>>> hashTables);
 };
 
 class Scan : public Operator

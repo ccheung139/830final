@@ -8,9 +8,6 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # set(CMAKE_C_COMPILER /usr/local/bin/gcc)
 # set(CMAKE_CXX_COMPILER /usr/local/bin/g++)
 
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Ofast -fopenmp -g -fsanitize=address -Wall")
-set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -fopenmp")
-
 include_directories(${PROJECT_SOURCE_DIR}/src/include)
 
 # Get the list of all sources.
