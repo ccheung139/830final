@@ -272,6 +272,7 @@ void Join::copy2Result(uint64_t left_id, uint64_t right_id)
 void Join::run()
 {
   left_->require(p_info_.left);
+  right_->require(p_info_.right);
   left_->run();
   right_->run();
 
@@ -282,9 +283,9 @@ void Join::run()
     std::swap(p_info_.left, p_info_.right);
     std::swap(requested_columns_left_, requested_columns_right_);
   }
-
   auto left_input_data = left_->getResults();
   auto right_input_data = right_->getResults();
+
   // Resolve the input_ columns_
   unsigned res_col_id = 0;
   for (auto &info : requested_columns_left_)
@@ -297,6 +298,7 @@ void Join::run()
     copy_right_data_.push_back(right_input_data[right_->resolve(info)]);
     select_to_result_col_id_[info] = res_col_id++;
   }
+
   auto left_col_id = left_->resolve(p_info_.left);
   auto right_col_id = right_->resolve(p_info_.right);
 
