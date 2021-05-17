@@ -111,7 +111,7 @@ void Relation::loadRelation(const char *file_name)
 
   for (int c = 0; c < this->columns_.size(); c++)
   {
-    std::vector<int> colVals = getColVals(c);
+    std::vector<uint64_t> colVals = getColVals(c);
     std::vector<int> histogramForCol = constructHistogram(colVals);
 
     histogramsForRelation.push_back(histogramForCol);
@@ -145,9 +145,9 @@ void Relation::loadRelation(const char *file_name)
   // }
 }
 
-std::vector<int> Relation::getColVals(int colIdx)
+std::vector<uint64_t> Relation::getColVals(int colIdx)
 {
-  std::vector<int> colVals(this->size_, 0);
+  std::vector<uint64_t> colVals(this->size_, 0);
   auto &c(this->columns_[colIdx]);
   for (int j = 0; j < this->size_; j++)
   {
@@ -157,12 +157,12 @@ std::vector<int> Relation::getColVals(int colIdx)
   return colVals;
 }
 
-std::vector<int> Relation::constructHistogram(std::vector<int> colVals)
+std::vector<int> Relation::constructHistogram(std::vector<uint64_t> colVals)
 {
 
-  int minVal, maxVal = colVals[0];
+  uint64_t minVal, maxVal = colVals[0];
 
-  for (int colVal : colVals)
+  for (uint64_t colVal : colVals)
   {
     minVal = std::min(colVal, minVal);
     maxVal = std::max(colVal, maxVal);
@@ -174,7 +174,7 @@ std::vector<int> Relation::constructHistogram(std::vector<int> colVals)
   std::vector<int> histogram(NUM_BUCKETS, 0);
 
   // A bit of repeated work as before when getting min and maxes (may be better to combine into one)
-  for (int &colVal : colVals)
+  for (uint64_t &colVal : colVals)
   {
     int bucket = (colVal - minVal) / bucketWidth;
     if (bucket >= NUM_BUCKETS)
@@ -187,7 +187,6 @@ std::vector<int> Relation::constructHistogram(std::vector<int> colVals)
   // *minValPtr = minVal;
   // *maxValPtr = maxVal;
   // *bucketWidthPtr = bucketWidth;
-
   histogram.push_back(minVal);
   histogram.push_back(maxVal);
   histogram.push_back(bucketWidth);
