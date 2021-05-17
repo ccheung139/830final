@@ -110,26 +110,6 @@ void Relation::loadRelation(const char *file_name)
     addr += size_ * sizeof(uint64_t);
   }
 
-  std::vector<std::vector<uint64_t>> histogramsForRelation;
-
-  // hashtable = makeHashTables()
-  // Operators::store
-
-  for (int c = 0; c < this->columns_.size(); c++)
-  {
-    std::vector<uint64_t> colVals = getColVals(c);
-    std::vector<uint64_t> histogramForCol = constructHistogram(colVals);
-
-    histogramsForRelation.push_back(histogramForCol);
-  }
-
-  Joiner::appendHistogram(histogramsForRelation);
-
-  std::tuple<std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<std::vector<std::vector<uint64_t>>>>
-      hashTablesAndSortedVals = makeHashTables();
-
-  hashStuff = hashTablesAndSortedVals;
-
   // Operator::appendHashTablesAndSortedVals(hashTablesAndSortedVals);
 
   // hashTableAndSortedVals_ = hashTablesAndSortedVals;
@@ -160,6 +140,31 @@ void Relation::loadRelation(const char *file_name)
   // }
 }
 
+const void Relation::performRelationWork() const
+{
+  std::cerr << this->columns_.size() << std::endl;
+
+  std::vector<std::vector<uint64_t>> histogramsForRelation;
+
+  // hashtable = makeHashTables()
+  // Operators::store
+
+  for (int c = 0; c < this->columns_.size(); c++)
+  {
+    std::vector<uint64_t> colVals = this->getColVals(c);
+    std::vector<uint64_t> histogramForCol = this->constructHistogram(colVals);
+
+    histogramsForRelation.push_back(histogramForCol);
+  }
+
+  Joiner::appendHistogram(histogramsForRelation);
+
+  std::tuple<std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<std::vector<std::vector<uint64_t>>>>
+      hashStuff = this->makeHashTables();
+
+  // hashStuff = hashTablesAndSortedVals;
+}
+
 /**
  * 0: equals hashtables
  *    vector of hashtables - for each column
@@ -169,8 +174,8 @@ void Relation::loadRelation(const char *file_name)
  *    vector of minimum values - for each column
  * 4: maximums
  */
-std::tuple<std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<std::vector<std::vector<uint64_t>>>>
-Relation::makeHashTables()
+const std::tuple<std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<std::vector<std::vector<uint64_t>>>>
+Relation::makeHashTables() const
 {
   std::vector<std::map<uint64_t, std::vector<uint64_t>>> resultEquals;
   std::vector<std::vector<std::vector<uint64_t>>> sortedVals;
@@ -230,7 +235,7 @@ Relation::makeHashTables()
 // 1, [5]
 // 4, [5, 2]
 
-std::vector<uint64_t> Relation::getColVals(int colIdx)
+const std::vector<uint64_t> Relation::getColVals(int colIdx) const
 {
   std::vector<uint64_t> colVals(this->size_, 0);
   auto &c(this->columns_[colIdx]);
@@ -242,7 +247,7 @@ std::vector<uint64_t> Relation::getColVals(int colIdx)
   return colVals;
 }
 
-std::vector<uint64_t> Relation::constructHistogram(std::vector<uint64_t> colVals)
+const std::vector<uint64_t> Relation::constructHistogram(std::vector<uint64_t> colVals) const
 {
 
   uint64_t minVal, maxVal = colVals[0];

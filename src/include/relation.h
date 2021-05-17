@@ -55,6 +55,8 @@ public:
     return hashStuff;
   }
 
+  const void performRelationWork() const;
+
   // const std::tuple<std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<std::vector<std::vector<uint64_t>>>>
   //     &hashTableAndSortedVals() const { return hashTableAndSortedVals_; }
 
@@ -63,11 +65,11 @@ private:
   void loadRelation(const char *file_name);
 
   // Returns all the values in a certain column specified by colIdx
-  std::vector<uint64_t> getColVals(const int colIdx);
+  const std::vector<uint64_t> getColVals(const int colIdx) const;
 
   // Returns the histogram with colVals passed in (result of calling getColVals)
-  std::vector<uint64_t> constructHistogram(const std::vector<uint64_t> colVals);
+  const std::vector<uint64_t> constructHistogram(const std::vector<uint64_t> colVals) const;
 
-  std::tuple<std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<std::vector<std::vector<uint64_t>>>>
-  makeHashTables();
+  const std::tuple<std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<std::vector<std::vector<uint64_t>>>>
+  makeHashTables() const;
 };

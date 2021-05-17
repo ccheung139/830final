@@ -3,14 +3,24 @@
 #include "joiner.h"
 #include "parser.h"
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
   Joiner joiner;
 
   // Read join relations
   std::string line;
-  while (getline(std::cin, line)) {
-    if (line == "Done") break;
+  while (getline(std::cin, line))
+  {
+    if (line == "Done")
+      break;
     joiner.addRelation(line.c_str());
+  }
+
+  auto relations = &joiner.relations();
+  std::cerr << relations->size() << std::endl;
+  for (unsigned i = 0; i < relations->size(); i++)
+  {
+    relations->at(i).performRelationWork();
   }
 
   // joiner.
@@ -26,11 +36,11 @@ int main(int argc, char *argv[]) {
 
   // order the joins in the query using filterSelectivites?
 
-  
-
   QueryInfo i;
-  while (getline(std::cin, line)) {
-    if (line == "F") continue; // End of a batch
+  while (getline(std::cin, line))
+  {
+    if (line == "F")
+      continue; // End of a batch
     i.parseQuery(line);
     std::cout << joiner.join(i);
   }
