@@ -144,6 +144,12 @@ void FilterScan::run()
     //   #pragma inline
     //   mergeIntingTmpResults(col);
     // }
+
+    // loop through all of the filters
+    // indices1 = hashTable(filter1) 0.2 = 1000
+    // indices2 = hashTable(filter2)
+    // copy2ResultInting(indices1 and indices2)
+
     for (int i = 0; i < NUM_THREADS - 1; ++i) {
       threads.push_back(std::thread(&FilterScan::runTask, this, size * i, size * (i + 1), i));
     }

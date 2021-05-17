@@ -125,9 +125,11 @@ void Relation::loadRelation(const char *file_name)
 
   Joiner::appendHistogram(histogramsForRelation);
 
-  // std::tuple<std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<std::map<uint64_t, std::vector<uint64_t>>>,
-  //            std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<uint64_t>, std::vector<uint64_t>>
-  //     hashTables = makeHashTables();
+  std::tuple<std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<std::map<uint64_t, std::vector<uint64_t>>>,
+             std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<uint64_t>, std::vector<uint64_t>>
+      hashTables = makeHashTables();
+
+  std::cerr << "finished running" << std::endl;
   // std::cerr << hashTables[0].size() << std::endl;
 
   // Operator::appendHashTables(hashTables);
@@ -177,7 +179,7 @@ Relation::makeHashTables()
   std::vector<uint64_t> minimums;
   std::vector<uint64_t> maximums;
 
-  for (uint64_t c = 0; c < this->columns_.size(); ++c)
+  for (int c = 0; c < this->columns_.size(); ++c)
   {
     std::vector<uint64_t> colVals = getColVals(c);
     std::map<uint64_t, std::vector<uint64_t>> hashTable;
@@ -192,8 +194,7 @@ Relation::makeHashTables()
     uint64_t minimum = INT64_MAX;
     uint64_t maximum = 0;
     
-
-    for (uint64_t i = 0; i < colVals.size(); ++i)
+    for (int i = 0; i < colVals.size(); ++i)
     {
       uint64_t colVal = colVals[i];
       if (hashTable.count(colVal))
@@ -225,51 +226,54 @@ Relation::makeHashTables()
     
 
     std::vector<uint64_t> indicesLessThan;
-    for (uint64_t i = 0; i < sortedColVals.size(); ++i)
+    for (int i = 0; i < sortedColVals.size(); ++i)
     {
+      
+
       uint64_t colVal = sortedColVals[i];
       std::vector<uint64_t> copyIndices(indicesLessThan);
       lessThanHashTable.insert(std::pair<uint64_t, std::vector<uint64_t>>(colVal, copyIndices));
       indicesLessThan.push_back(valToIndex.find(i)->second);
     }
 
-    std::vector<uint64_t> lastIndicesListSeen;
-    for (uint64_t i = minimum; i <= maximum; ++i)
-    {
-      if (lessThanHashTable.count(i))
-      {
-        // auto f = lessThanHashTable.find(i);
-        lastIndicesListSeen = lessThanHashTable.find(i)->second;
-      }
-      else
-      {
-        lessThanHashTable.insert(std::pair<uint64_t, std::vector<uint64_t>>(i, lastIndicesListSeen));
-      }
-    }
+    // std::vector<uint64_t> lastIndicesListSeen;
+    // for (uint64_t i = minimum; i <= maximum; ++i)
+    // {
+    //   if (lessThanHashTable.count(i))
+    //   {
+    //     // auto f = lessThanHashTable.find(i);
+    //     lastIndicesListSeen = lessThanHashTable.find(i)->second;
+    //   }
+    //   else
+    //   {
+    //     lessThanHashTable.insert(std::pair<uint64_t, std::vector<uint64_t>>(i, lastIndicesListSeen));
+    //   }
+    // }
 
     std::vector<uint64_t> indicesGreaterThan;
-  
-    for (uint64_t j; j > -1; --j)
+    // std::cerr << "jsize : " <<  sortedColVals.size() << std::endl;
+
+    for (int j = sortedColVals.size() - 1; j >= 0; --j)
     {
-      std::cerr << "j : " <<  j << std::endl;
+      // std::cerr << "j : " <<  j << std::endl;
       uint64_t colVal = sortedColVals[j];
       std::vector<uint64_t> copyIndices(indicesGreaterThan);
       greaterThanHashTable.insert(std::pair<uint64_t, std::vector<uint64_t>>(colVal, copyIndices));
       indicesGreaterThan.push_back(valToIndex.find(j)->second);
     }
 
-    std::vector<uint64_t> lastIndicesListSeenGreater;
-    for (uint64_t i = maximum; i >= minimum; --i)
-    {
-      if (greaterThanHashTable.count(i))
-      {
-        lastIndicesListSeenGreater = greaterThanHashTable.find(i)->second;
-      }
-      else
-      {
-        greaterThanHashTable.insert(std::pair<uint64_t, std::vector<uint64_t>>(i, lastIndicesListSeenGreater));
-      }
-    }
+    // std::vector<uint64_t> lastIndicesListSeenGreater;
+    // for (uint64_t i = maximum; i >= minimum; --i)
+    // {
+    //   if (greaterThanHashTable.count(i))
+    //   {
+    //     lastIndicesListSeenGreater = greaterThanHashTable.find(i)->second;
+    //   }
+    //   else
+    //   {
+    //     greaterThanHashTable.insert(std::pair<uint64_t, std::vector<uint64_t>>(i, lastIndicesListSeenGreater));
+    //   }
+    // }
 
     resultEquals.push_back(hashTable);
     resultLessThan.push_back(lessThanHashTable);
