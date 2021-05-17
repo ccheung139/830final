@@ -29,7 +29,7 @@ struct hash<SelectInfo>
 /// Operators materialize their entire result
 class Operator {
  protected:
-  int NUM_THREADS = 24;
+  int NUM_THREADS = 8;
   /// Mapping from select info to data
   std::unordered_map<SelectInfo, unsigned> select_to_result_col_id_;
   /// The materialized results
