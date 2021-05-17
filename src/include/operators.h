@@ -20,7 +20,7 @@ struct hash<SelectInfo>
 {
   std::size_t operator()(SelectInfo const &s) const noexcept
   {
-    return s.col_id*2654435761 % 2^32;
+    return s.binding ^ s.col_id*2654435761 % 2^32;
     // return s.binding ^ (s.col_id << 5);
   }
 };
@@ -105,7 +105,7 @@ private:
 
   void copy2ResultInting(uint64_t index, uint64_t id);
 
-  void mergeIntingTmpResults();
+  void mergeIntingTmpResults(int col);
 
 public:
   /// The constructor
@@ -160,6 +160,8 @@ private:
   void copy2ResultInting(uint64_t left_id, uint64_t right_id, uint64_t index);
 
   void runTask(uint64_t lowerBound, uint64_t upperBound, int index, uint64_t *right_key_column);
+
+  void buildHashTable(uint64_t lowerBound, uint64_t upperBound, int index, uint64_t *left_key_column);
 
   void mergeIntingTmpResults(int col);
   /// Create mapping for bindings

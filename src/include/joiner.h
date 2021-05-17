@@ -14,6 +14,8 @@ private:
   /// The relations that might be joined
   std::vector<Relation> relations_;
 
+  std::vector<FilterInfo> filters_copy;
+
 public:
   /// Add relation
   void addRelation(const char *file_name);
@@ -32,4 +34,6 @@ private:
   std::unique_ptr<Operator> addScan(std::set<unsigned> &used_relations,
                                     const SelectInfo &info,
                                     QueryInfo &query);
+  
+  double isFilterScan(const SelectInfo &info, QueryInfo &query);
 };

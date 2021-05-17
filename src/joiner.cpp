@@ -8,6 +8,7 @@
 #include <set>
 #include <sstream>
 #include <vector>
+#include <algorithm>
 
 #include "parser.h"
 
@@ -88,6 +89,22 @@ std::unique_ptr<Operator> Joiner::addScan(std::set<unsigned> &used_relations,
                                                    info.binding);
 }
 
+double Joiner::isFilterScan(const SelectInfo &info, QueryInfo &query) {
+  std::vector<FilterInfo> filters;
+  // auto filters_copy = query.filters();
+   for (unsigned i = 0; i < filters_copy.size(); ++i)
+  {
+    // std::cerr << filters_copy[i].selectivity << std::endl;
+    if (filters_copy[i].filter_column.binding == info.binding)
+    {
+      return filters_copy[i].selectivity;
+      // filters.emplace_back(filters_copy[i]);
+    }
+  }
+  return 1.0;
+  // return !filters.empty() ? filters[0].selectivity : 1.0;
+}
+
 // Executes a join query
 std::string Joiner::join(QueryInfo &query)
 {
@@ -116,7 +133,7 @@ std::string Joiner::join(QueryInfo &query)
 
   
   // HISTOGRAM STUFF
-  // auto filters_copy = query.filters();
+  // filters_copy = query.filters();
   // for (unsigned i = 0; i < filters_copy.size(); ++i)
   // {
   //   auto &indiv_filter = filters_copy[i];
@@ -138,8 +155,8 @@ std::string Joiner::join(QueryInfo &query)
   //   int minVal = histogram.back();
   //   histogram.pop_back();
   //   double selectivity = estimateSelectivity(histogram, minVal, maxVal, bucketWidth, comparison, constant, nTups);
-  //   std::cerr << "selectivity: " << selectivity << std::endl;
-
+  //   // std::cerr << "selectivity: " << selectivity << std::endl;
+  //   indiv_filter.selectivity = selectivity;
   //   histogram.push_back(minVal);
   //   histogram.push_back(maxVal);
   //   histogram.push_back(bucketWidth);
@@ -168,15 +185,26 @@ std::string Joiner::join(QueryInfo &query)
   //   std::cout << "start here: " << std::endl;
   //   std::cout << p_info2.dumpText() << std::endl;
   // }
+  
+  auto predicates_copy = query.predicates();
 
-  const auto &firstJoin = query.predicates()[0];
+  // for (int i = 0; i < predicates_copy.size(); ++i) {
+  //   predicates_copy[i].selectivity = std::min(isFilterScan(predicates_copy[i].left, query), isFilterScan(predicates_copy[i].right, query));
+  //   // std::cerr << predicates_copy[i].selectivity  << std::endl;
+  // }
+
+  // std::sort(std::begin(predicates_copy), 
+  //           std::end(predicates_copy),
+  //           [](PredicateInfo a, PredicateInfo b) {return a.selectivity > b.selectivity; });
+
+
+  const auto &firstJoin = predicates_copy[0];
   std::unique_ptr<Operator> left, right;
   left = addScan(used_relations, firstJoin.left, query);
   right = addScan(used_relations, firstJoin.right, query);
   std::unique_ptr<Operator>
       root = std::make_unique<Join>(move(left), move(right), firstJoin);
 
-  auto predicates_copy = query.predicates();
   for (unsigned i = 1; i < predicates_copy.size(); ++i)
   {
     auto &p_info = predicates_copy[i];
@@ -228,7 +256,7 @@ std::string Joiner::join(QueryInfo &query)
 
 double Joiner::estimateSelectivity(std::vector<int> histogram, int minVal, int maxVal, int bucketWidth, FilterInfo::Comparison op, uint64_t val, int nTups)
 {
-  std::cerr << "OPERATION: " << char(op) << std::endl;
+  // std::cerr << "OPERATION: " << char(op) << std::endl;
 
   int NUM_BUCKETS = 10;
   int bucketIndex = std::min(int((val - minVal) / bucketWidth), NUM_BUCKETS - 1);
@@ -259,7 +287,7 @@ double Joiner::estimateSelectivity(std::vector<int> histogram, int minVal, int m
         proportionLessThan *
         (1.0 * histogram[bucketIndex] / (float)nTups);
 
-    std::cerr << "FIRST RUNNING SUM : " << runningSum << " BUCKET INDEX: " << bucketIndex << " BUCKET MIN " << bucketMin << " BUCKET WIDTH " << bucketWidth << std::endl;
+    // std::cerr << "FIRST RUNNING SUM : " << runningSum << " BUCKET INDEX: " << bucketIndex << " BUCKET MIN " << bucketMin << " BUCKET WIDTH " << bucketWidth << std::endl;
 
     for (int i = 0; i < bucketIndex; i++)
     { 

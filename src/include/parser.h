@@ -51,6 +51,8 @@ struct FilterInfo {
   /// Comparison type
   Comparison comparison;
 
+  double selectivity;
+
   /// The constructor
   FilterInfo(SelectInfo filter_column, uint64_t constant, Comparison comparison)
       : filter_column(filter_column),
@@ -77,7 +79,8 @@ struct PredicateInfo {
   SelectInfo left;
   /// Right
   SelectInfo right;
-
+  
+  double selectivity;
   /// The constructor
   PredicateInfo(SelectInfo left, SelectInfo right)
       : left(left), right(right) {};
