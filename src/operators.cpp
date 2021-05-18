@@ -292,14 +292,13 @@ void Join::run()
   }
   // Probe phase
   auto right_key_column = right_input_data[right_col_id];
-
+  int desiredNumThreads = std::max((int)(right_->result_size() / 5000), 1);
+  NUM_THREADS = std::min(desiredNumThreads, NUM_THREADS);
   inting_tmp_results_.resize(NUM_THREADS);
-  // left_inting_tmp_results_.resize(NUM_THREADS);
-  // right_inting_tmp_results_.resize(NUM_THREADS);
 
   limit = right_->result_size();
   size = limit / (NUM_THREADS);
-  if (right_->result_size() > 1000) {
+  if (NUM_THREADS != 1) {
     
     for (int j = 0; j < NUM_THREADS - 1; j++)
     {
@@ -425,9 +424,10 @@ void SelfJoin::run()
 
   std::vector<std::thread> threads;
   uint64_t limit = input_->result_size();
-
+  int desiredNumThreads = std::max((int)(limit / 5000), 1);
+  NUM_THREADS = std::min(desiredNumThreads, NUM_THREADS);
   uint64_t size = limit / (NUM_THREADS);
-  if (limit > 1000) {
+  if (NUM_THREADS != 1) {
     for (int j = 0; j < NUM_THREADS - 1; j++)
     {
       threads.push_back(std::thread(&SelfJoin::runTask, this, j * size, size * (j + 1), j, left_col, right_col));

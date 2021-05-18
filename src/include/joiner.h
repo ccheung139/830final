@@ -14,9 +14,11 @@ private:
   /// The relations that might be joined
   std::vector<Relation> relations_;
 
-  std::vector<FilterInfo> filters_copy;
+  // std::vector<FilterInfo> filters_copy;
 
 public:
+  std::vector<std::string> aggResults;
+  std::vector<std::thread> threads;
   /// Add relation
   void addRelation(const char *file_name);
   void addRelation(Relation &&relation);
@@ -26,13 +28,15 @@ public:
   /// Get relation
   const Relation &getRelation(unsigned relation_id);
   /// Joins a given set of relations
-  std::string join(QueryInfo &i);
+  std::string join(std::string line, int index);
+
+  void asyncJoin(std::string line, int index);
 
   const std::vector<Relation> &relations() const { return relations_; }
 
 private:
   /// Add scan to query
-  std::unique_ptr<Operator> addScan(std::set<unsigned> &used_relations,
+  std::shared_ptr<Operator> addScan(std::set<unsigned> &used_relations,
                                     const SelectInfo &info,
                                     QueryInfo &query);
   

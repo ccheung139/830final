@@ -27,10 +27,25 @@ int main(int argc, char *argv[]) {
   
 
   QueryInfo i;
+  int index = 0;
   while (getline(std::cin, line)) {
-    if (line == "F") continue; // End of a batch
-    i.parseQuery(line);
-    std::cout << joiner.join(i);
+    if (line == "F") {
+      for (auto& thread : joiner.threads) {
+        thread.join();
+      }
+      for (std::string out: joiner.aggResults) {
+        std::cout << out;
+      }
+      joiner.threads.clear();
+      joiner.aggResults.clear();
+      index = 0;
+      continue; // End of a batch
+    }
+    // i.parseQuery(line);
+    joiner.asyncJoin(line, index);
+    ++index;
+    
+    // std::cout << joiner.join(i);
   }
 
   return 0;

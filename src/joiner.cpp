@@ -78,7 +78,7 @@ const Relation &Joiner::getRelation(unsigned relation_id)
 }
 
 // Add scan to query
-std::unique_ptr<Operator> Joiner::addScan(std::set<unsigned> &used_relations,
+std::shared_ptr<Operator> Joiner::addScan(std::set<unsigned> &used_relations,
                                           const SelectInfo &info,
                                           QueryInfo &query)
 {
@@ -91,21 +91,19 @@ std::unique_ptr<Operator> Joiner::addScan(std::set<unsigned> &used_relations,
       filters.emplace_back(f);
     }
   }
-  return !filters.empty() ? std::make_unique<FilterScan>(getRelation(info.rel_id), filters)
-                          : std::make_unique<Scan>(getRelation(info.rel_id),
+  return !filters.empty() ? std::make_shared<FilterScan>(getRelation(info.rel_id), filters)
+                          : std::make_shared<Scan>(getRelation(info.rel_id),
                                                    info.binding);
 }
 
 double Joiner::isFilterScan(const SelectInfo &info, QueryInfo &query) {
   std::vector<FilterInfo> filters;
-  // auto filters_copy = query.filters();
+  auto filters_copy = query.filters();
   for (unsigned i = 0; i < filters_copy.size(); ++i)
   {
-    // std::cerr << filters_copy[i].selectivity << std::endl;
     if (filters_copy[i].filter_column.binding == info.binding)
     {
       return filters_copy[i].selectivity;
-      // filters.emplace_back(filters_copy[i]);
     }
   }
   return 1.0;
@@ -113,10 +111,11 @@ double Joiner::isFilterScan(const SelectInfo &info, QueryInfo &query) {
 }
 
 // Executes a join query
-std::string Joiner::join(QueryInfo &query)
+std::string Joiner::join(std::string line, int index)
 {
   std::set<unsigned> used_relations;
-
+  QueryInfo query;
+  query.parseQuery(line);
   // We always start with the first join predicate and append the other joins
   // to it (--> left-deep join trees). You might want to choose a smarter
   // join ordering ...
@@ -142,41 +141,41 @@ std::string Joiner::join(QueryInfo &query)
   //   std::cerr << i << " " << relationSizes[i] << std::endl;
   // }
   // HISTOGRAM STUFF
-  filters_copy = query.filters();
-  for (unsigned i = 0; i < filters_copy.size(); ++i)
-  {
-    auto &indiv_filter = filters_copy[i];
-    FilterInfo::Comparison comparison = indiv_filter.comparison;
-    auto constant = indiv_filter.constant;
-    SelectInfo select_info = indiv_filter.filter_column;
-    RelationId relation_id = select_info.rel_id;
-    unsigned col_id = select_info.col_id;
+  // filters_copy = query.filters();
+  // for (unsigned i = 0; i < filters_copy.size(); ++i)
+  // {
+  //   auto &indiv_filter = filters_copy[i];
+  //   FilterInfo::Comparison comparison = indiv_filter.comparison;
+  //   auto constant = indiv_filter.constant;
+  //   SelectInfo select_info = indiv_filter.filter_column;
+  //   RelationId relation_id = select_info.rel_id;
+  //   unsigned col_id = select_info.col_id;
 
-    std::vector<std::vector<int>> &histograms = histogramList[relation_id];
-    std::vector<int> &histogram = histograms[col_id];
+  //   std::vector<std::vector<int>> &histograms = histogramList[relation_id];
+  //   std::vector<int> &histogram = histograms[col_id];
 
-    int nTups = histogram.back();
-    histogram.pop_back();
-    int bucketWidth = histogram.back();
-    histogram.pop_back();
-    int maxVal = histogram.back();
-    histogram.pop_back();
-    int minVal = histogram.back();
-    histogram.pop_back();
-    double selectivity = estimateSelectivity(histogram, minVal, maxVal, bucketWidth, comparison, constant, nTups);
-    // std::cerr << "selectivity: " << selectivity << std::endl;
-    indiv_filter.selectivity = selectivity;
-    // std::cerr << indiv_filter.selectivity << std::endl;
-    histogram.push_back(minVal);
-    histogram.push_back(maxVal);
-    histogram.push_back(bucketWidth);
-    histogram.push_back(nTups);
-    // now run estimate selectivity
+  //   int nTups = histogram.back();
+  //   histogram.pop_back();
+  //   int bucketWidth = histogram.back();
+  //   histogram.pop_back();
+  //   int maxVal = histogram.back();
+  //   histogram.pop_back();
+  //   int minVal = histogram.back();
+  //   histogram.pop_back();
+  //   double selectivity = estimateSelectivity(histogram, minVal, maxVal, bucketWidth, comparison, constant, nTups);
+  //   // std::cerr << "selectivity: " << selectivity << std::endl;
+  //   indiv_filter.selectivity = selectivity;
+  //   // std::cerr << indiv_filter.selectivity << std::endl;
+  //   histogram.push_back(minVal);
+  //   histogram.push_back(maxVal);
+  //   histogram.push_back(bucketWidth);
+  //   histogram.push_back(nTups);
+  //   // now run estimate selectivity
 
-    // estimateSelectivity on indiv_filter
-    //  std::cerr << "constant: " << std::endl;
-    // std::cerr << constant << std::endl;
-  }
+  //   // estimateSelectivity on indiv_filter
+  //   //  std::cerr << "constant: " << std::endl;
+  //   // std::cerr << constant << std::endl;
+  // }
 
   // make filter selectivities
   // make join ordering
@@ -197,24 +196,24 @@ std::string Joiner::join(QueryInfo &query)
   
   auto predicates_copy = query.predicates();
 
-  for (int i = 0; i < predicates_copy.size(); ++i) {
-    predicates_copy[i].selectivity = isFilterScan(predicates_copy[i].left, query) * relationSizes[predicates_copy[i].left.rel_id] *
-                                     isFilterScan(predicates_copy[i].right, query) * relationSizes[predicates_copy[i].right.rel_id];
-  }
+  // for (int i = 0; i < predicates_copy.size(); ++i) {
+  //   predicates_copy[i].selectivity = isFilterScan(predicates_copy[i].left, query) * relationSizes[predicates_copy[i].left.rel_id] *
+  //                                    isFilterScan(predicates_copy[i].right, query) * relationSizes[predicates_copy[i].right.rel_id];
+  // }
 
-  std::sort(std::begin(predicates_copy), 
-            std::end(predicates_copy),
-            [](PredicateInfo a, PredicateInfo b) {return a.selectivity < b.selectivity; });
+  // std::sort(std::begin(predicates_copy), 
+  //           std::end(predicates_copy),
+  //           [](PredicateInfo a, PredicateInfo b) {return a.selectivity < b.selectivity; });
   // for (int i = 0; i < predicates_copy.size(); ++i) {
   //   std::cerr << predicates_copy[i].selectivity << std::endl;
   // }
 
   const auto &firstJoin = predicates_copy[0];
-  std::unique_ptr<Operator> left, right;
+  std::shared_ptr<Operator> left, right;
   left = addScan(used_relations, firstJoin.left, query);
   right = addScan(used_relations, firstJoin.right, query);
-  std::unique_ptr<Operator>
-      root = std::make_unique<Join>(move(left), move(right), firstJoin);
+  std::shared_ptr<Operator>
+      root = std::make_shared<Join>(move(left), move(right), firstJoin);
 
   for (unsigned i = 1; i < predicates_copy.size(); ++i)
   {
@@ -227,20 +226,20 @@ std::string Joiner::join(QueryInfo &query)
     case QueryGraphProvides::Left:
       left = move(root);
       right = addScan(used_relations, right_info, query);
-      root = std::make_unique<Join>(move(left), move(right), p_info);
+      root = std::make_shared<Join>(move(left), move(right), p_info);
       break;
     case QueryGraphProvides::Right:
       left = addScan(used_relations,
                      left_info,
                      query);
       right = move(root);
-      root = std::make_unique<Join>(move(left), move(right), p_info);
+      root = std::make_shared<Join>(move(left), move(right), p_info);
       break;
     case QueryGraphProvides::Both:
       // All relations of this join are already used somewhere else in the
       // query. Thus, we have either a cycle in our join graph or more than
       // one join predicate per join.
-      root = std::make_unique<SelfJoin>(move(root), p_info);
+      root = std::make_shared<SelfJoin>(move(root), p_info);
       break;
     case QueryGraphProvides::None:
       // Process this predicate later when we can connect it to the other
@@ -252,7 +251,6 @@ std::string Joiner::join(QueryInfo &query)
 
   Checksum checksum(move(root), query.selections());
   checksum.run();
-
   std::stringstream out;
   auto &results = checksum.check_sums();
   for (unsigned i = 0; i < results.size(); ++i)
@@ -262,7 +260,13 @@ std::string Joiner::join(QueryInfo &query)
       out << " ";
   }
   out << "\n";
+  aggResults[index] = out.str();
   return out.str();
+}
+
+void Joiner::asyncJoin(std::string line, int index) {
+  aggResults.emplace_back();
+  threads.push_back(std::thread(&Joiner::join, this, line, index));
 }
 
 double Joiner::estimateSelectivity(std::vector<int> histogram, uint64_t minVal, uint64_t maxVal, int bucketWidth, FilterInfo::Comparison op, uint64_t val, int nTups)
