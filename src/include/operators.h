@@ -68,6 +68,8 @@ public:
   /// Get  materialized results
   virtual std::vector<uint64_t *> getResults();
 
+  void mergeIntingTmpResults(std::vector<uint64_t *> result_vector, int col);
+
   uint64_t result_size() const { return result_size_; }
 };
 
