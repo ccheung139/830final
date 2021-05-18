@@ -89,10 +89,11 @@ std::unique_ptr<Operator> Joiner::addScan(std::set<unsigned> &used_relations,
                                                    info.binding);
 }
 
-double Joiner::isFilterScan(const SelectInfo &info, QueryInfo &query) {
+double Joiner::isFilterScan(const SelectInfo &info, QueryInfo &query)
+{
   std::vector<FilterInfo> filters;
   // auto filters_copy = query.filters();
-   for (unsigned i = 0; i < filters_copy.size(); ++i)
+  for (unsigned i = 0; i < filters_copy.size(); ++i)
   {
     // std::cerr << filters_copy[i].selectivity << std::endl;
     if (filters_copy[i].filter_column.binding == info.binding)
@@ -131,7 +132,6 @@ std::string Joiner::join(QueryInfo &query)
   //   }
   // }
 
-  
   // HISTOGRAM STUFF
   // filters_copy = query.filters();
   // for (unsigned i = 0; i < filters_copy.size(); ++i)
@@ -185,7 +185,7 @@ std::string Joiner::join(QueryInfo &query)
   //   std::cout << "start here: " << std::endl;
   //   std::cout << p_info2.dumpText() << std::endl;
   // }
-  
+
   auto predicates_copy = query.predicates();
 
   // for (int i = 0; i < predicates_copy.size(); ++i) {
@@ -193,10 +193,9 @@ std::string Joiner::join(QueryInfo &query)
   //   // std::cerr << predicates_copy[i].selectivity  << std::endl;
   // }
 
-  // std::sort(std::begin(predicates_copy), 
+  // std::sort(std::begin(predicates_copy),
   //           std::end(predicates_copy),
   //           [](PredicateInfo a, PredicateInfo b) {return a.selectivity > b.selectivity; });
-
 
   const auto &firstJoin = predicates_copy[0];
   std::unique_ptr<Operator> left, right;
@@ -290,7 +289,7 @@ double Joiner::estimateSelectivity(std::vector<uint64_t> histogram, uint64_t min
     // std::cerr << "FIRST RUNNING SUM : " << runningSum << " BUCKET INDEX: " << bucketIndex << " BUCKET MIN " << bucketMin << " BUCKET WIDTH " << bucketWidth << std::endl;
 
     for (uint64_t i = 0; i < bucketIndex; i++)
-    { 
+    {
       runningSum += 1.0 * histogram[i] / nTups;
     }
     return runningSum;

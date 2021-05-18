@@ -16,13 +16,6 @@ std::vector<uint64_t *> Operator::getResults()
   return result_vector;
 }
 
-// std::vector<std::vector<std::map<int, std::vector<int>>>> allHashTables;
-
-// void Operator::appendHashTablesAndSortedVals(std::vector<std::map<int, std::vector<int>>> hashTables)
-// {
-//   allHashTables.push_back(hashTables);
-// }
-
 // Require a column and add it to results
 bool Scan::require(SelectInfo info)
 {
@@ -134,7 +127,71 @@ void FilterScan::run()
 
     uint64_t size = relation_.size() / NUM_THREADS;
 
-    // relation_.hashTableAndSortedVals();
+    // std::tuple<std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<std::vector<std::vector<uint64_t>>>>
+    //     hashTableAndSortedVals = relation_.getHashStuff();
+
+    // std::vector<std::map<uint64_t, std::vector<uint64_t>>> hashTable = std::get<0>(hashTableAndSortedVals);
+    // std::vector<std::vector<std::vector<uint64_t>>>
+    //     sortedVals = std::get<1>(hashTableAndSortedVals);
+
+    // bool pass = true;
+    // std::vector<std::vector<uint64_t>> allValidIndices;
+    // std::cerr << "HASHTABLE VALS SIZE" << hashTable.size() << std::endl;
+    // std::cerr << "SORTED VALS SIZE" << sortedVals.size() << std::endl;
+
+    for (auto &f : filters_)
+    {
+      int colIdx = f.filter_column.col_id;
+      auto constant = f.constant;
+      std::vector<uint64_t> validIndices;
+
+      std::vector<std::vector<uint64_t>> allIndices = sortedVals[colIdx];
+      std::cerr << f.dumpText() << std::endl;
+
+      switch (f.comparison)
+      {
+
+      case FilterInfo::Comparison::Equal:
+
+        validIndices = hashTable[colIdx].find(constant)->second;
+      case FilterInfo::Comparison::Greater:
+        std::cerr << f.comparison << std::endl;
+
+        continue;
+        // for (int i = allIndices.size() - 1; i >= 0; --i)
+        // {
+        //   uint64_t val = allIndices[i][0];
+        //   uint64_t idx = allIndices[i][1];
+        //   if (val > constant)
+        //   {
+        //     validIndices.push_back(idx);
+        //   }
+        //   else
+        //   {
+        //     break;
+        //   }
+        // }
+      case FilterInfo::Comparison::Less:
+        std::cerr << f.comparison << std::endl;
+
+        continue;
+        // for (int i = 0; i < allIndices.size() - 1; ++i)
+        // {
+        //   uint64_t val = allIndices[i][0];
+        //   uint64_t idx = allIndices[i][1];
+        //   if (val < constant)
+        //   {
+        //     validIndices.push_back(idx);
+        //   }
+        //   else
+        //   {
+        //     break;
+        //   }
+        // }
+      };
+
+      allValidIndices.push_back(validIndices);
+    }
 
     // #pragma omp parallel num_threads(NUM_THREADS - 1)
     // {

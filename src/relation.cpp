@@ -140,10 +140,13 @@ void Relation::loadRelation(const char *file_name)
   // }
 }
 
-const void Relation::performRelationWork() const
-{
-  std::cerr << this->columns_.size() << std::endl;
+// const void Relation::modifyHashStuff(std::tuple<std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<std::vector<std::vector<uint64_t>>>> args)
+// {
+//   hashStuff = args;
+// }
 
+const std::tuple<std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<std::vector<std::vector<uint64_t>>>> Relation::performRelationWork() const
+{
   std::vector<std::vector<uint64_t>> histogramsForRelation;
 
   // hashtable = makeHashTables()
@@ -159,10 +162,9 @@ const void Relation::performRelationWork() const
 
   Joiner::appendHistogram(histogramsForRelation);
 
-  std::tuple<std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<std::vector<std::vector<uint64_t>>>>
-      hashStuff = this->makeHashTables();
+  std::tuple<std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<std::vector<std::vector<uint64_t>>>> hashTableAndSortedVals = makeHashTables();
 
-  // hashStuff = hashTablesAndSortedVals;
+  return hashTableAndSortedVals;
 }
 
 /**
@@ -287,7 +289,7 @@ const std::vector<uint64_t> Relation::constructHistogram(std::vector<uint64_t> c
 }
 
 // Constructor that loads relation_ from disk
-Relation::Relation(const char *file_name) : owns_memory_(false), size_(0)
+Relation::Relation(const char *file_name) : owns_memory_(false), size_(0), std::tuple<std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<std::vector<std::vector<uint64_t>>>>
 {
   loadRelation(file_name);
 }

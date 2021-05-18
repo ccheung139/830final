@@ -17,12 +17,16 @@ private:
   /// The join column containing the keys
   std::vector<uint64_t *> columns_;
 
-  std::tuple<std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<std::vector<std::vector<uint64_t>>>> hashStuff;
+  // std::tuple<std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<std::vector<std::vector<uint64_t>>>> &hashTableAndSortedVals_;
 
 public:
+  std::tuple<std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<std::vector<std::vector<uint64_t>>>> &hashTableAndSortedVals_;
+
   /// Constructor without mmap
   Relation(uint64_t size, std::vector<uint64_t *> &&columns)
-      : owns_memory_(true), size_(size), columns_(columns) {}
+      : owns_memory_(true), size_(size), columns_(columns)
+  {
+  }
   /// Constructor using mmap
   explicit Relation(const char *file_name);
   /// Delete copy constructor
@@ -50,17 +54,19 @@ public:
   /// The join column containing the keys
   const std::vector<uint64_t *> &columns() const { return columns_; }
 
-  const std::tuple<std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<std::vector<std::vector<uint64_t>>>> &getHashStuff() const
-  {
-    return hashStuff;
-  }
+  // const std::tuple<std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<std::vector<std::vector<uint64_t>>>> &getHashStuff() const
+  // {
+  //   return hashStuff;
+  // }
 
-  const void performRelationWork() const;
+  const std::tuple<std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<std::vector<std::vector<uint64_t>>>> performRelationWork() const;
 
   // const std::tuple<std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<std::vector<std::vector<uint64_t>>>>
   //     &hashTableAndSortedVals() const { return hashTableAndSortedVals_; }
 
 private:
+  std::vector<int> hashStuff_;
+
   /// Loads data from a file
   void loadRelation(const char *file_name);
 
@@ -72,4 +78,6 @@ private:
 
   const std::tuple<std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<std::vector<std::vector<uint64_t>>>>
   makeHashTables() const;
+
+  void modifyHashStuff(std::tuple<std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<std::vector<std::vector<uint64_t>>>> args) const;
 };

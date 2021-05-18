@@ -13,14 +13,18 @@ int main(int argc, char *argv[])
   {
     if (line == "Done")
       break;
+
     joiner.addRelation(line.c_str());
   }
 
   auto relations = &joiner.relations();
-  std::cerr << relations->size() << std::endl;
+  std::vector<std::tuple<std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<std::vector<std::vector<uint64_t>>>>> relationToHashTable;
+
   for (unsigned i = 0; i < relations->size(); i++)
   {
-    relations->at(i).performRelationWork();
+    std::tuple<std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<std::vector<std::vector<uint64_t>>>> hashTableAndSortedVals =
+        relations->at(i).performRelationWork();
+    relationToHashTable.push_back(hashTableAndSortedVals);
   }
 
   // joiner.
@@ -42,6 +46,10 @@ int main(int argc, char *argv[])
     if (line == "F")
       continue; // End of a batch
     i.parseQuery(line);
+
+    std::vector<FilterInfo> filterForGivenRelation = i.filters;
+
+    
     std::cout << joiner.join(i);
   }
 
