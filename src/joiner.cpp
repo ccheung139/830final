@@ -42,9 +42,16 @@ QueryGraphProvides analyzeInputOfJoin(std::set<unsigned> &usedRelations,
 
 std::vector<std::vector<std::vector<uint64_t>>> histogramList;
 
-void Joiner::appendHistogram(std::vector<std::vector<uint64_t>> histogram)
+std::vector<uint64_t> relationSizes;
+
+// void Joiner::appendHistogram(std::vector<std::vector<int>> histogram)
+// {
+//   histogramList.push_back(histogram);
+// }
+
+void Joiner::appendRelationSize(uint64_t size)
 {
-  histogramList.push_back(histogram);
+  relationSizes.push_back(size);
 }
 
 // Loads a relation_ from disk
@@ -71,7 +78,7 @@ const Relation &Joiner::getRelation(unsigned relation_id)
 }
 
 // Add scan to query
-std::unique_ptr<Operator> Joiner::addScan(std::set<unsigned> &used_relations,
+std::shared_ptr<Operator> Joiner::addScan(std::set<unsigned> &used_relations,
                                           const SelectInfo &info,
                                           QueryInfo &query)
 {
@@ -84,22 +91,20 @@ std::unique_ptr<Operator> Joiner::addScan(std::set<unsigned> &used_relations,
       filters.emplace_back(f);
     }
   }
-  return !filters.empty() ? std::make_unique<FilterScan>(getRelation(info.rel_id), filters)
-                          : std::make_unique<Scan>(getRelation(info.rel_id),
+  return !filters.empty() ? std::make_shared<FilterScan>(getRelation(info.rel_id), filters)
+                          : std::make_shared<Scan>(getRelation(info.rel_id),
                                                    info.binding);
 }
 
 double Joiner::isFilterScan(const SelectInfo &info, QueryInfo &query)
 {
   std::vector<FilterInfo> filters;
-  // auto filters_copy = query.filters();
+  auto filters_copy = query.filters();
   for (unsigned i = 0; i < filters_copy.size(); ++i)
   {
-    // std::cerr << filters_copy[i].selectivity << std::endl;
     if (filters_copy[i].filter_column.binding == info.binding)
     {
       return filters_copy[i].selectivity;
-      // filters.emplace_back(filters_copy[i]);
     }
   }
   return 1.0;
@@ -107,9 +112,84 @@ double Joiner::isFilterScan(const SelectInfo &info, QueryInfo &query)
 }
 
 // Executes a join query
-std::string Joiner::join(QueryInfo &query)
+std::string Joiner::join(std::string line, int index, std::vector<std::tuple<std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<std::vector<std::vector<uint64_t>>>>> relationToHashTable)
 {
   std::set<unsigned> used_relations;
+  QueryInfo query;
+  query.parseQuery(line);
+
+  std::vector<FilterInfo> filtersForGivenQuery = query.filters();
+
+  for (FilterInfo filterInfo : filtersForGivenQuery)
+  {
+    SelectInfo relevantSelectInfo = filterInfo.filter_column;
+    int colId = relevantSelectInfo.col_id;
+
+    std::tuple<std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<std::vector<std::vector<uint64_t>>>> relevantTuple = relationToHashTable[colId];
+    std::vector<std::map<uint64_t, std::vector<uint64_t>>>
+        hashTable = std::get<0>(relevantTuple);
+    std::vector<std::vector<std::vector<uint64_t>>>
+        sortedVals = std::get<1>(relevantTuple);
+
+    bool pass = true;
+    std::vector<std::vector<uint64_t>> allValidIndices;
+    std::cerr << "HASHTABLE VALS SIZE" << hashTable.size() << std::endl;
+    std::cerr << "SORTED VALS SIZE" << sortedVals.size() << std::endl;
+
+    // for (auto &f : filters_)
+    // {
+    //   int colIdx = f.filter_column.col_id;
+    //   auto constant = f.constant;
+    //   std::vector<uint64_t> validIndices;
+
+    //   std::vector<std::vector<uint64_t>> allIndices = sortedVals[colIdx];
+    //   std::cerr << f.dumpText() << std::endl;
+
+    //   switch (f.comparison)
+    //   {
+
+    //   case FilterInfo::Comparison::Equal:
+
+    //     validIndices = hashTable[colIdx].find(constant)->second;
+    //   case FilterInfo::Comparison::Greater:
+    //     std::cerr << f.comparison << std::endl;
+
+    //     continue;
+    //     for (int i = allIndices.size() - 1; i >= 0; --i)
+    //     {
+    //       uint64_t val = allIndices[i][0];
+    //       uint64_t idx = allIndices[i][1];
+    //       if (val > constant)
+    //       {
+    //         validIndices.push_back(idx);
+    //       }
+    //       else
+    //       {
+    //         break;
+    //       }
+    //     }
+    //   case FilterInfo::Comparison::Less:
+    //     std::cerr << f.comparison << std::endl;
+
+    //     continue;
+    //     for (int i = 0; i < allIndices.size() - 1; ++i)
+    //     {
+    //       uint64_t val = allIndices[i][0];
+    //       uint64_t idx = allIndices[i][1];
+    //       if (val < constant)
+    //       {
+    //         validIndices.push_back(idx);
+    //       }
+    //       else
+    //       {
+    //         break;
+    //       }
+    //     }
+    //   };
+
+    //   allValidIndices.push_back(validIndices);
+    // }
+  }
 
   // We always start with the first join predicate and append the other joins
   // to it (--> left-deep join trees). You might want to choose a smarter
@@ -132,6 +212,9 @@ std::string Joiner::join(QueryInfo &query)
   //   }
   // }
 
+  // for (int i = 0; i < relationSizes.size(); ++i) {
+  //   std::cerr << i << " " << relationSizes[i] << std::endl;
+  // }
   // HISTOGRAM STUFF
   // filters_copy = query.filters();
   // for (unsigned i = 0; i < filters_copy.size(); ++i)
@@ -157,11 +240,11 @@ std::string Joiner::join(QueryInfo &query)
   //   double selectivity = estimateSelectivity(histogram, minVal, maxVal, bucketWidth, comparison, constant, nTups);
   //   // std::cerr << "selectivity: " << selectivity << std::endl;
   //   indiv_filter.selectivity = selectivity;
+  //   // std::cerr << indiv_filter.selectivity << std::endl;
   //   histogram.push_back(minVal);
   //   histogram.push_back(maxVal);
   //   histogram.push_back(bucketWidth);
   //   histogram.push_back(nTups);
-
   //   // now run estimate selectivity
 
   //   // estimateSelectivity on indiv_filter
@@ -189,20 +272,23 @@ std::string Joiner::join(QueryInfo &query)
   auto predicates_copy = query.predicates();
 
   // for (int i = 0; i < predicates_copy.size(); ++i) {
-  //   predicates_copy[i].selectivity = std::min(isFilterScan(predicates_copy[i].left, query), isFilterScan(predicates_copy[i].right, query));
-  //   // std::cerr << predicates_copy[i].selectivity  << std::endl;
+  //   predicates_copy[i].selectivity = isFilterScan(predicates_copy[i].left, query) * relationSizes[predicates_copy[i].left.rel_id] *
+  //                                    isFilterScan(predicates_copy[i].right, query) * relationSizes[predicates_copy[i].right.rel_id];
   // }
 
   // std::sort(std::begin(predicates_copy),
   //           std::end(predicates_copy),
-  //           [](PredicateInfo a, PredicateInfo b) {return a.selectivity > b.selectivity; });
+  //           [](PredicateInfo a, PredicateInfo b) {return a.selectivity < b.selectivity; });
+  // for (int i = 0; i < predicates_copy.size(); ++i) {
+  //   std::cerr << predicates_copy[i].selectivity << std::endl;
+  // }
 
   const auto &firstJoin = predicates_copy[0];
-  std::unique_ptr<Operator> left, right;
+  std::shared_ptr<Operator> left, right;
   left = addScan(used_relations, firstJoin.left, query);
   right = addScan(used_relations, firstJoin.right, query);
-  std::unique_ptr<Operator>
-      root = std::make_unique<Join>(move(left), move(right), firstJoin);
+  std::shared_ptr<Operator>
+      root = std::make_shared<Join>(move(left), move(right), firstJoin);
 
   for (unsigned i = 1; i < predicates_copy.size(); ++i)
   {
@@ -215,20 +301,20 @@ std::string Joiner::join(QueryInfo &query)
     case QueryGraphProvides::Left:
       left = move(root);
       right = addScan(used_relations, right_info, query);
-      root = std::make_unique<Join>(move(left), move(right), p_info);
+      root = std::make_shared<Join>(move(left), move(right), p_info);
       break;
     case QueryGraphProvides::Right:
       left = addScan(used_relations,
                      left_info,
                      query);
       right = move(root);
-      root = std::make_unique<Join>(move(left), move(right), p_info);
+      root = std::make_shared<Join>(move(left), move(right), p_info);
       break;
     case QueryGraphProvides::Both:
       // All relations of this join are already used somewhere else in the
       // query. Thus, we have either a cycle in our join graph or more than
       // one join predicate per join.
-      root = std::make_unique<SelfJoin>(move(root), p_info);
+      root = std::make_shared<SelfJoin>(move(root), p_info);
       break;
     case QueryGraphProvides::None:
       // Process this predicate later when we can connect it to the other
@@ -240,7 +326,6 @@ std::string Joiner::join(QueryInfo &query)
 
   Checksum checksum(move(root), query.selections());
   checksum.run();
-
   std::stringstream out;
   auto &results = checksum.check_sums();
   for (unsigned i = 0; i < results.size(); ++i)
@@ -250,21 +335,28 @@ std::string Joiner::join(QueryInfo &query)
       out << " ";
   }
   out << "\n";
+  aggResults[index] = out.str();
   return out.str();
 }
 
-double Joiner::estimateSelectivity(std::vector<uint64_t> histogram, uint64_t minVal, uint64_t maxVal, uint64_t bucketWidth, FilterInfo::Comparison op, uint64_t val, uint64_t nTups)
+void Joiner::asyncJoin(std::string line, int index, std::vector<std::tuple<std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<std::vector<std::vector<uint64_t>>>>> relationToHashTable)
 {
-  // std::cerr << "OPERATION: " << char(op) << std::endl;
+  aggResults.emplace_back();
+  threads.push_back(std::thread(&Joiner::join, this, line, index));
+}
 
-  uint64_t NUM_BUCKETS = 10;
-  uint64_t bucketIndex = std::min(uint64_t((val - minVal) / bucketWidth), NUM_BUCKETS - 1);
+double Joiner::estimateSelectivity(std::vector<int> histogram, uint64_t minVal, uint64_t maxVal, int bucketWidth, FilterInfo::Comparison op, uint64_t val, int nTups)
+{
+  // std::cerr << "OPERATION: " << char(op) << " " << val << " " << minVal << " " << maxVal << std::endl;
+
+  int NUM_BUCKETS = 10;
+  int bucketIndex = std::min(int((val - minVal) / bucketWidth), NUM_BUCKETS - 1);
 
   switch (op)
   {
   case FilterInfo::Comparison::Equal:
   {
-    if (val < minVal || val > minVal)
+    if (val < minVal || val > maxVal)
     {
       return 0.0;
     }

@@ -112,8 +112,16 @@ void Relation::loadRelation(const char *file_name)
 
   // Operator::appendHashTablesAndSortedVals(hashTablesAndSortedVals);
 
-  // hashTableAndSortedVals_ = hashTablesAndSortedVals;
+  // for (int c = 0; c < this->columns_.size(); c++)
+  // {
+  //   std::vector<uint64_t> colVals = getColVals(c);
+  //   std::vector<int> histogramForCol = constructHistogram(colVals);
 
+  //   histogramsForRelation.push_back(histogramForCol);
+  // }
+
+  // Joiner::appendHistogram(histogramsForRelation);
+  // Joiner::appendRelationSize(size_);
   // std::vector<int> firstColVals = getColVals(0);
   // std::vector<int> histogram = constructHistogram(firstColVals);
 
@@ -160,7 +168,7 @@ const std::tuple<std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::ve
     histogramsForRelation.push_back(histogramForCol);
   }
 
-  Joiner::appendHistogram(histogramsForRelation);
+  // Joiner::appendHistogram(histogramsForRelation);
 
   std::tuple<std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<std::vector<std::vector<uint64_t>>>> hashTableAndSortedVals = makeHashTables();
 
@@ -279,7 +287,6 @@ const std::vector<uint64_t> Relation::constructHistogram(std::vector<uint64_t> c
   // *minValPtr = minVal;
   // *maxValPtr = maxVal;
   // *bucketWidthPtr = bucketWidth;
-
   histogram.push_back(minVal);
   histogram.push_back(maxVal);
   histogram.push_back(bucketWidth);
@@ -289,7 +296,7 @@ const std::vector<uint64_t> Relation::constructHistogram(std::vector<uint64_t> c
 }
 
 // Constructor that loads relation_ from disk
-Relation::Relation(const char *file_name) : owns_memory_(false), size_(0), std::tuple<std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<std::vector<std::vector<uint64_t>>>>
+Relation::Relation(const char *file_name) : owns_memory_(false), size_(0)
 {
   loadRelation(file_name);
 }

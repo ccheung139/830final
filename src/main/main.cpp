@@ -41,16 +41,31 @@ int main(int argc, char *argv[])
   // order the joins in the query using filterSelectivites?
 
   QueryInfo i;
+  int index = 0;
   while (getline(std::cin, line))
   {
+
     if (line == "F")
+    {
+      for (auto &thread : joiner.threads)
+      {
+        thread.join();
+      }
+      for (std::string out : joiner.aggResults)
+      {
+        std::cout << out;
+      }
+      joiner.threads.clear();
+      joiner.aggResults.clear();
+      index = 0;
       continue; // End of a batch
-    i.parseQuery(line);
+    }
 
-    std::vector<FilterInfo> filterForGivenRelation = i.filters;
+    // joiner.asyncJoin(line, index, relationToHashTable);
 
-    
-    std::cout << joiner.join(i);
+    ++index;
+
+    // std::cout << joiner.join(i);
   }
 
   return 0;

@@ -21,7 +21,7 @@ struct hash<SelectInfo>
 {
   std::size_t operator()(SelectInfo const &s) const noexcept
   {
-    return (s.binding ^ s.col_id) * 2654435761 % 2 ^ 32;
+    return (s.binding ^ s.col_id) * 2654435761 % 4294967296;
     // return s.binding ^ (s.col_id << 5);
   }
 };
@@ -41,6 +41,9 @@ protected:
 
   // The temp temp results lol
   std::vector<std::vector<std::vector<uint64_t>>> inting_tmp_results_;
+
+  // std::vector<std::vector<uint64_t>> left_inting_tmp_results_;
+  // std::vector<std::vector<uint64_t>> right_inting_tmp_results_;
 
   // result sizes gathered by each thread
   // std::vector<uint64_t> inting_result_sizes_;
@@ -65,6 +68,8 @@ public:
   virtual void run() = 0;
   /// Get  materialized results
   virtual std::vector<uint64_t *> getResults();
+
+  void mergeIntingTmpResults(std::vector<uint64_t *> result_vector, int col);
 
   uint64_t result_size() const { return result_size_; }
 
@@ -139,7 +144,7 @@ class Join : public Operator
 {
 private:
   /// The input operators
-  std::unique_ptr<Operator> left_, right_;
+  std::shared_ptr<Operator> left_, right_;
   /// The join predicate info
   PredicateInfo p_info_;
 
@@ -168,13 +173,17 @@ private:
   void buildHashTable(uint64_t lowerBound, uint64_t upperBound, int index, uint64_t *left_key_column);
 
   void mergeIntingTmpResults(int col);
+
+  void mergeIntingTmpResultsLeft(int col);
+
+  void mergeIntingTmpResultsRight(int col);
   /// Create mapping for bindings
   void createMappingForBindings();
 
 public:
   /// The constructor
-  Join(std::unique_ptr<Operator> &&left,
-       std::unique_ptr<Operator> &&right,
+  Join(std::shared_ptr<Operator> &&left,
+       std::shared_ptr<Operator> &&right,
        const PredicateInfo &p_info)
       : left_(std::move(left)), right_(std::move(right)), p_info_(p_info){};
   /// Require a column and add it to results
@@ -188,7 +197,7 @@ class SelfJoin : public Operator
 {
 private:
   /// The input operators
-  std::unique_ptr<Operator> input_;
+  std::shared_ptr<Operator> input_;
   /// The join predicate info
   PredicateInfo p_info_;
   /// The required IUs
@@ -211,7 +220,7 @@ private:
 
 public:
   /// The constructor
-  SelfJoin(std::unique_ptr<Operator> &&input, PredicateInfo &p_info)
+  SelfJoin(std::shared_ptr<Operator> &&input, PredicateInfo &p_info)
       : input_(std::move(input)), p_info_(p_info){};
 
   /// Require a column and add it to results
@@ -224,7 +233,7 @@ class Checksum : public Operator
 {
 private:
   /// The input operator
-  std::unique_ptr<Operator> input_;
+  std::shared_ptr<Operator> input_;
   /// The join predicate info
   const std::vector<SelectInfo> col_info_;
 
@@ -232,7 +241,7 @@ private:
 
 public:
   /// The constructor
-  Checksum(std::unique_ptr<Operator> &&input,
+  Checksum(std::shared_ptr<Operator> &&input,
            std::vector<SelectInfo> col_info)
       : input_(std::move(input)), col_info_(std::move(col_info)){};
   /// Request a column and add it to results
