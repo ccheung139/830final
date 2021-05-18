@@ -30,7 +30,6 @@ int main(int argc, char *argv[]) {
   int index = 0;
   while (getline(std::cin, line)) {
     if (line == "F") {
-      std::cerr << "here" << std::endl;
       for (auto& thread : joiner.threads) {
         thread.join();
       }

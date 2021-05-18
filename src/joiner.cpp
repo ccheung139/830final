@@ -78,7 +78,7 @@ const Relation &Joiner::getRelation(unsigned relation_id)
 }
 
 // Add scan to query
-std::unique_ptr<Operator> Joiner::addScan(std::set<unsigned> &used_relations,
+std::shared_ptr<Operator> Joiner::addScan(std::set<unsigned> &used_relations,
                                           const SelectInfo &info,
                                           QueryInfo &query)
 {
@@ -91,8 +91,8 @@ std::unique_ptr<Operator> Joiner::addScan(std::set<unsigned> &used_relations,
       filters.emplace_back(f);
     }
   }
-  return !filters.empty() ? std::make_unique<FilterScan>(getRelation(info.rel_id), filters)
-                          : std::make_unique<Scan>(getRelation(info.rel_id),
+  return !filters.empty() ? std::make_shared<FilterScan>(getRelation(info.rel_id), filters)
+                          : std::make_shared<Scan>(getRelation(info.rel_id),
                                                    info.binding);
 }
 
@@ -111,10 +111,11 @@ double Joiner::isFilterScan(const SelectInfo &info, QueryInfo &query) {
 }
 
 // Executes a join query
-std::string Joiner::join(QueryInfo &query, int index)
+std::string Joiner::join(std::string line, int index)
 {
   std::set<unsigned> used_relations;
-
+  QueryInfo query;
+  query.parseQuery(line);
   // We always start with the first join predicate and append the other joins
   // to it (--> left-deep join trees). You might want to choose a smarter
   // join ordering ...
@@ -208,11 +209,11 @@ std::string Joiner::join(QueryInfo &query, int index)
   // }
 
   const auto &firstJoin = predicates_copy[0];
-  std::unique_ptr<Operator> left, right;
+  std::shared_ptr<Operator> left, right;
   left = addScan(used_relations, firstJoin.left, query);
   right = addScan(used_relations, firstJoin.right, query);
-  std::unique_ptr<Operator>
-      root = std::make_unique<Join>(move(left), move(right), firstJoin);
+  std::shared_ptr<Operator>
+      root = std::make_shared<Join>(move(left), move(right), firstJoin);
 
   for (unsigned i = 1; i < predicates_copy.size(); ++i)
   {
@@ -225,20 +226,20 @@ std::string Joiner::join(QueryInfo &query, int index)
     case QueryGraphProvides::Left:
       left = move(root);
       right = addScan(used_relations, right_info, query);
-      root = std::make_unique<Join>(move(left), move(right), p_info);
+      root = std::make_shared<Join>(move(left), move(right), p_info);
       break;
     case QueryGraphProvides::Right:
       left = addScan(used_relations,
                      left_info,
                      query);
       right = move(root);
-      root = std::make_unique<Join>(move(left), move(right), p_info);
+      root = std::make_shared<Join>(move(left), move(right), p_info);
       break;
     case QueryGraphProvides::Both:
       // All relations of this join are already used somewhere else in the
       // query. Thus, we have either a cycle in our join graph or more than
       // one join predicate per join.
-      root = std::make_unique<SelfJoin>(move(root), p_info);
+      root = std::make_shared<SelfJoin>(move(root), p_info);
       break;
     case QueryGraphProvides::None:
       // Process this predicate later when we can connect it to the other
@@ -250,7 +251,6 @@ std::string Joiner::join(QueryInfo &query, int index)
 
   Checksum checksum(move(root), query.selections());
   checksum.run();
-
   std::stringstream out;
   auto &results = checksum.check_sums();
   for (unsigned i = 0; i < results.size(); ++i)
@@ -265,12 +265,8 @@ std::string Joiner::join(QueryInfo &query, int index)
 }
 
 void Joiner::asyncJoin(std::string line, int index) {
-  QueryInfo query;
-  query.parseQuery(line);
   aggResults.emplace_back();
-  join(query, index);
-  // threads.push_back(std::thread(&Joiner::join, this, std::ref(query), index));
-  std::cerr << "pushed" << std::endl;
+  threads.push_back(std::thread(&Joiner::join, this, line, index));
 }
 
 double Joiner::estimateSelectivity(std::vector<int> histogram, uint64_t minVal, uint64_t maxVal, int bucketWidth, FilterInfo::Comparison op, uint64_t val, int nTups)

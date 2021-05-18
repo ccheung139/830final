@@ -28,7 +28,7 @@ public:
   /// Get relation
   const Relation &getRelation(unsigned relation_id);
   /// Joins a given set of relations
-  std::string join(QueryInfo &i, int index);
+  std::string join(std::string line, int index);
 
   void asyncJoin(std::string line, int index);
 
@@ -36,7 +36,7 @@ public:
 
 private:
   /// Add scan to query
-  std::unique_ptr<Operator> addScan(std::set<unsigned> &used_relations,
+  std::shared_ptr<Operator> addScan(std::set<unsigned> &used_relations,
                                     const SelectInfo &info,
                                     QueryInfo &query);
   

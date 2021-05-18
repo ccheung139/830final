@@ -424,9 +424,10 @@ void SelfJoin::run()
 
   std::vector<std::thread> threads;
   uint64_t limit = input_->result_size();
-
+  int desiredNumThreads = std::max((int)(limit / 5000), 1);
+  NUM_THREADS = std::min(desiredNumThreads, NUM_THREADS);
   uint64_t size = limit / (NUM_THREADS);
-  if (limit > 1000) {
+  if (NUM_THREADS != 1) {
     for (int j = 0; j < NUM_THREADS - 1; j++)
     {
       threads.push_back(std::thread(&SelfJoin::runTask, this, j * size, size * (j + 1), j, left_col, right_col));
