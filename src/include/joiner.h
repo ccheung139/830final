@@ -28,9 +28,9 @@ public:
   /// Get relation
   const Relation &getRelation(unsigned relation_id);
   /// Joins a given set of relations
-  std::string join(std::string line, int index, std::vector<std::tuple<std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<std::vector<std::vector<uint64_t>>>>> relationToHashTable);
+  std::string join(std::string line, int index);
 
-  void asyncJoin(std::string line, int index, std::vector<std::tuple<std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<std::vector<std::vector<uint64_t>>>>> relationToHashTable);
+  void asyncJoin(std::string line, int index);
 
   const std::vector<Relation> &relations() const { return relations_; }
 

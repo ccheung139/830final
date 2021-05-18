@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
       continue; // End of a batch
     }
 
-    // joiner.asyncJoin(line, index, relationToHashTable);
+    joiner.asyncJoin(line, index);
 
     ++index;
 

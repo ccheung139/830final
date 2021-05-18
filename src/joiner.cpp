@@ -112,84 +112,84 @@ double Joiner::isFilterScan(const SelectInfo &info, QueryInfo &query)
 }
 
 // Executes a join query
-std::string Joiner::join(std::string line, int index, std::vector<std::tuple<std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<std::vector<std::vector<uint64_t>>>>> relationToHashTable)
+std::string Joiner::join(std::string line, int index)
 {
   std::set<unsigned> used_relations;
   QueryInfo query;
   query.parseQuery(line);
 
-  std::vector<FilterInfo> filtersForGivenQuery = query.filters();
+  // std::vector<FilterInfo> filtersForGivenQuery = query.filters();
 
-  for (FilterInfo filterInfo : filtersForGivenQuery)
-  {
-    SelectInfo relevantSelectInfo = filterInfo.filter_column;
-    int colId = relevantSelectInfo.col_id;
+  // for (FilterInfo filterInfo : filtersForGivenQuery)
+  // {
+  //   SelectInfo relevantSelectInfo = filterInfo.filter_column;
+  //   int colId = relevantSelectInfo.col_id;
 
-    std::tuple<std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<std::vector<std::vector<uint64_t>>>> relevantTuple = relationToHashTable[colId];
-    std::vector<std::map<uint64_t, std::vector<uint64_t>>>
-        hashTable = std::get<0>(relevantTuple);
-    std::vector<std::vector<std::vector<uint64_t>>>
-        sortedVals = std::get<1>(relevantTuple);
+  //   std::tuple<std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<std::vector<std::vector<uint64_t>>>> relevantTuple = relationToHashTable[colId];
+  //   std::vector<std::map<uint64_t, std::vector<uint64_t>>>
+  //       hashTable = std::get<0>(relevantTuple);
+  //   std::vector<std::vector<std::vector<uint64_t>>>
+  //       sortedVals = std::get<1>(relevantTuple);
 
-    bool pass = true;
-    std::vector<std::vector<uint64_t>> allValidIndices;
-    std::cerr << "HASHTABLE VALS SIZE" << hashTable.size() << std::endl;
-    std::cerr << "SORTED VALS SIZE" << sortedVals.size() << std::endl;
+  //   bool pass = true;
+  //   std::vector<std::vector<uint64_t>> allValidIndices;
+  //   std::cerr << "HASHTABLE VALS SIZE" << hashTable.size() << std::endl;
+  //   std::cerr << "SORTED VALS SIZE" << sortedVals.size() << std::endl;
 
-    // for (auto &f : filters_)
-    // {
-    //   int colIdx = f.filter_column.col_id;
-    //   auto constant = f.constant;
-    //   std::vector<uint64_t> validIndices;
+  // for (auto &f : filters_)
+  // {
+  //   int colIdx = f.filter_column.col_id;
+  //   auto constant = f.constant;
+  //   std::vector<uint64_t> validIndices;
 
-    //   std::vector<std::vector<uint64_t>> allIndices = sortedVals[colIdx];
-    //   std::cerr << f.dumpText() << std::endl;
+  //   std::vector<std::vector<uint64_t>> allIndices = sortedVals[colIdx];
+  //   std::cerr << f.dumpText() << std::endl;
 
-    //   switch (f.comparison)
-    //   {
+  //   switch (f.comparison)
+  //   {
 
-    //   case FilterInfo::Comparison::Equal:
+  //   case FilterInfo::Comparison::Equal:
 
-    //     validIndices = hashTable[colIdx].find(constant)->second;
-    //   case FilterInfo::Comparison::Greater:
-    //     std::cerr << f.comparison << std::endl;
+  //     validIndices = hashTable[colIdx].find(constant)->second;
+  //   case FilterInfo::Comparison::Greater:
+  //     std::cerr << f.comparison << std::endl;
 
-    //     continue;
-    //     for (int i = allIndices.size() - 1; i >= 0; --i)
-    //     {
-    //       uint64_t val = allIndices[i][0];
-    //       uint64_t idx = allIndices[i][1];
-    //       if (val > constant)
-    //       {
-    //         validIndices.push_back(idx);
-    //       }
-    //       else
-    //       {
-    //         break;
-    //       }
-    //     }
-    //   case FilterInfo::Comparison::Less:
-    //     std::cerr << f.comparison << std::endl;
+  //     continue;
+  //     for (int i = allIndices.size() - 1; i >= 0; --i)
+  //     {
+  //       uint64_t val = allIndices[i][0];
+  //       uint64_t idx = allIndices[i][1];
+  //       if (val > constant)
+  //       {
+  //         validIndices.push_back(idx);
+  //       }
+  //       else
+  //       {
+  //         break;
+  //       }
+  //     }
+  //   case FilterInfo::Comparison::Less:
+  //     std::cerr << f.comparison << std::endl;
 
-    //     continue;
-    //     for (int i = 0; i < allIndices.size() - 1; ++i)
-    //     {
-    //       uint64_t val = allIndices[i][0];
-    //       uint64_t idx = allIndices[i][1];
-    //       if (val < constant)
-    //       {
-    //         validIndices.push_back(idx);
-    //       }
-    //       else
-    //       {
-    //         break;
-    //       }
-    //     }
-    //   };
+  //     continue;
+  //     for (int i = 0; i < allIndices.size() - 1; ++i)
+  //     {
+  //       uint64_t val = allIndices[i][0];
+  //       uint64_t idx = allIndices[i][1];
+  //       if (val < constant)
+  //       {
+  //         validIndices.push_back(idx);
+  //       }
+  //       else
+  //       {
+  //         break;
+  //       }
+  //     }
+  //   };
 
-    //   allValidIndices.push_back(validIndices);
-    // }
-  }
+  //   allValidIndices.push_back(validIndices);
+  // }
+  // }
 
   // We always start with the first join predicate and append the other joins
   // to it (--> left-deep join trees). You might want to choose a smarter
@@ -339,7 +339,7 @@ std::string Joiner::join(std::string line, int index, std::vector<std::tuple<std
   return out.str();
 }
 
-void Joiner::asyncJoin(std::string line, int index, std::vector<std::tuple<std::vector<std::map<uint64_t, std::vector<uint64_t>>>, std::vector<std::vector<std::vector<uint64_t>>>>> relationToHashTable)
+void Joiner::asyncJoin(std::string line, int index)
 {
   aggResults.emplace_back();
   threads.push_back(std::thread(&Joiner::join, this, line, index));
