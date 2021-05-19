@@ -172,6 +172,10 @@ private:
 
   void runTask(uint64_t lowerBound, uint64_t upperBound, int index, uint64_t *right_key_column);
 
+  void populateLeftWork(uint64_t lowerBound, uint64_t upperBound, uint64_t *relevant_column);
+
+  void populateRightWork(uint64_t lowerBound, uint64_t upperBound, uint64_t *relevant_column);
+
   void buildHashTable(uint64_t lowerBound, uint64_t upperBound, int index, uint64_t *left_key_column);
 
   void mergeIntingTmpResults(int index, uint64_t offset);

@@ -302,39 +302,55 @@ void Join::run()
 
   auto left_col_id = left_->resolve(p_info_.left);
   auto right_col_id = right_->resolve(p_info_.right);
-  // int desiredNumThreads = std::max((int)(right_->result_size() / 10000), 1);
-  // NUM_THREADS = std::min(desiredNumThreads, NUM_THREADS);
+  int desiredNumThreads = std::max((int)(right_->result_size() / 10000), 1);
+  NUM_THREADS = std::min(desiredNumThreads, NUM_THREADS);
   // Build phase
   // std::vector<std::thread> threads;
-  uint64_t limit = left_->result_size();
   auto left_key_column = left_input_data[left_col_id];
-  // hash_table_.reserve(left_->result_size() * 2);
-  leftTableWork.resize(NUM_THREADS);
-  leftTableIndex.resize(NUM_THREADS);
-  rightTableWork.resize(NUM_THREADS);
-  rightTableIndex.resize(NUM_THREADS);
-  for (uint64_t i = 0; i != limit; ++i)
-  {
-    uint64_t leftVal = left_key_column[i];
-    leftTableWork[leftVal % NUM_THREADS].push_back(leftVal);
-    leftTableIndex[leftVal % NUM_THREADS].push_back(i);
-  }
-  // Probe phase
   auto right_key_column = right_input_data[right_col_id];
-  inting_tmp_results_.resize(NUM_THREADS);
-  inting_result_sizes_.resize(NUM_THREADS);
-  limit = right_->result_size();
-  uint64_t size = limit / (NUM_THREADS);
-  for (uint64_t i = 0; i != limit; ++i)
-  {
-    uint64_t rightVal = right_key_column[i];
-    rightTableWork[rightVal % NUM_THREADS].push_back(rightVal);
-    rightTableIndex[rightVal % NUM_THREADS].push_back(i);
-  }
   if (NUM_THREADS != 1)
   {
-
     std::vector<std::future<void>> newThreads;
+    uint64_t limit = left_->result_size();
+    uint64_t size = limit / (NUM_THREADS);
+    leftTableWork.resize(NUM_THREADS);
+    leftTableIndex.resize(NUM_THREADS);
+    rightTableWork.resize(NUM_THREADS);
+    rightTableIndex.resize(NUM_THREADS);
+    for (int j = 0; j < NUM_THREADS - 1; j++)
+    {
+      // populateWork(j * size, size * (j + 1), leftTableWork, leftTableIndex, left_key_column);
+      newThreads.emplace_back(pool.enqueue([&, j, size, left_key_column] { Join::populateLeftWork(j * size, size * (j + 1), left_key_column); }));
+    }
+    populateLeftWork((NUM_THREADS - 1) * size, limit, left_key_column);
+    // for (auto &&result : newThreads)
+    //   result.get();
+    // for (uint64_t i = 0; i != limit; ++i)
+    // {
+    //   uint64_t leftVal = left_key_column[i];
+    //   leftTableWork[leftVal % NUM_THREADS].push_back(leftVal);
+    //   leftTableIndex[leftVal % NUM_THREADS].push_back(i);
+    // }
+    // Probe phase
+    
+    inting_tmp_results_.resize(NUM_THREADS);
+    inting_result_sizes_.resize(NUM_THREADS);
+    limit = right_->result_size();
+    size = limit / (NUM_THREADS);
+    // for (int j = 0; j < NUM_THREADS - 1; j++)
+    // {
+    //   newThreads.emplace_back(pool.enqueue([&, j, size, right_key_column] { Join::populateWork(j * size, size * (j + 1), rightTableWork, rightTableIndex, right_key_column); }));
+    // }
+    // runTask((NUM_THREADS - 1) * size, limit, NUM_THREADS - 1, right_key_column);
+    // for (auto &&result : newThreads)
+    //   result.get();
+    for (uint64_t i = 0; i != limit; ++i)
+    {
+      uint64_t rightVal = right_key_column[i];
+      rightTableWork[rightVal % NUM_THREADS].push_back(rightVal);
+      rightTableIndex[rightVal % NUM_THREADS].push_back(i);
+    }
+    
 
     for (int j = 0; j < NUM_THREADS - 1; j++)
     {
@@ -370,7 +386,12 @@ void Join::run()
   }
   else
   {
-    auto right_key_column = right_input_data[right_col_id];
+    hash_table_.reserve(left_->result_size() * 2);
+    for (uint64_t i = 0; i != left_->result_size(); ++i)
+    {
+      hash_table_.emplace(left_key_column[i], i);
+    }
+    uint64_t limit = right_->result_size();
     for (uint64_t i = 0, limit = i + right_->result_size(); i != limit; ++i)
     {
       auto rightKey = right_key_column[i];
@@ -396,7 +417,8 @@ void Join::runTask(uint64_t lowerBound, uint64_t upperBound, int index, uint64_t
   for (uint64_t i = 0; i < threadLeftWork.size(); ++i) {
     localHashTable.emplace(threadLeftWork[i], threadLeftIndex[i]);
   }
-
+  threadLeftWork.clear();
+  threadLeftIndex.clear();
   inting_tmp_results_[index].resize(tmp_results_.size());
   std::vector<std::vector<uint64_t>> &localCopy = inting_tmp_results_[index];
   for (uint64_t i = 0; i < threadRightWork.size(); ++i) 
@@ -419,6 +441,24 @@ void Join::runTask(uint64_t lowerBound, uint64_t upperBound, int index, uint64_t
     }
   }
   inting_result_sizes_[index] = localCopy[0].size();
+}
+
+void Join::populateLeftWork(uint64_t lowerBound, uint64_t upperBound, uint64_t *relevant_column) {
+  for (uint64_t i = lowerBound; i < upperBound; ++i)
+    {
+      uint64_t val = relevant_column[i];
+      leftTableWork[val % NUM_THREADS].push_back(val);
+      leftTableIndex[val % NUM_THREADS].push_back(i);
+    }
+}
+
+void Join::populateRightWork(uint64_t lowerBound, uint64_t upperBound, uint64_t *relevant_column) {
+  for (uint64_t i = lowerBound; i < upperBound; ++i)
+    {
+      uint64_t val = relevant_column[i];
+      rightTableWork[val % NUM_THREADS].push_back(val);
+      rightTableIndex[val % NUM_THREADS].push_back(i);
+    }
 }
 
 void SelfJoin::copy2ResultInting(uint64_t i, int threadIndex)
