@@ -37,9 +37,11 @@ if (CMAKE_BUILD_TYPE MATCHES "[Dd][Ee][Bb][Uu][Gg]" OR FORCE_TESTS)
     add_subdirectory(test)
 endif()
 
+find_package(Boost REQUIRED COMPONENTS thread)
+# INCLUDE_DIRECTORIES( ${Boost_INCLUDE_DIR} )
 find_package( Threads )
 add_executable(driver src/main/main.cpp)
-target_link_libraries(driver database ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(driver database ${CMAKE_THREAD_LIBS_INIT} boost_thread)
 
 # Interactive command line tool to translate our query format to SQL queries
 add_executable(query2SQL src/main/query2SQL.cpp)

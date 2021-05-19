@@ -213,7 +213,7 @@ private:
 
   void runTask(uint64_t lowerBound, uint64_t upperBound, int index, uint64_t *left_key_column, uint64_t *right_key_column);
 
-  void mergeIntingTmpResults(int col);
+  void mergeIntingTmpResults(int index, uint64_t offset);
 
 public:
   /// The constructor

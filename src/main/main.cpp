@@ -2,10 +2,12 @@
 
 #include "joiner.h"
 #include "parser.h"
+#include <boost/thread.hpp>
 
 int main(int argc, char *argv[]) {
   Joiner joiner;
-
+  std::cerr << boost::thread::hardware_concurrency() << std::endl;
+  boost::thread_group group;
   // Read join relations
   std::string line;
   while (getline(std::cin, line)) {

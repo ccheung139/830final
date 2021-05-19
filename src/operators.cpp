@@ -213,13 +213,18 @@ void Join::mergeIntingTmpResults(int index, uint64_t offset)
   }
 }
 
-void SelfJoin::mergeIntingTmpResults(int col)
+void SelfJoin::mergeIntingTmpResults(int index, uint64_t offset)
 {
-  for (int threadIdx = 0; threadIdx < NUM_THREADS; ++threadIdx)
-    {
-      auto data = inting_tmp_results_[threadIdx][col];
-      tmp_results_[col].insert(tmp_results_[col].end(), data.begin(), data.end());
-    }
+  // for (int threadIdx = 0; threadIdx < NUM_THREADS; ++threadIdx)
+  //   {
+  //     auto data = inting_tmp_results_[threadIdx][col];
+  //     tmp_results_[col].insert(tmp_results_[col].end(), data.begin(), data.end());
+  //   }
+  for (int col = 0; col < tmp_results_.size(); ++col) {
+    auto& data = inting_tmp_results_[index][col];
+    std::vector<uint64_t>::iterator it = tmp_results_[col].begin();
+    std::copy(data.begin(), data.end(), tmp_results_[col].begin() + offset);
+  }
 }
 
 // Copy to result
@@ -285,7 +290,6 @@ void Join::run()
   NUM_THREADS = std::min(desiredNumThreads, NUM_THREADS);
   inting_tmp_results_.resize(NUM_THREADS);
   inting_result_sizes_.resize(NUM_THREADS);
-
   limit = right_->result_size();
   size = limit / (NUM_THREADS);
   if (NUM_THREADS != 1) {
@@ -322,7 +326,6 @@ void Join::run()
     for (auto& thread : threads) {
       thread.join();
     }
-
   } else {
     auto right_key_column = right_input_data[right_col_id];
     for (uint64_t i = 0, limit = i + right_->result_size(); i != limit; ++i) {
@@ -382,6 +385,7 @@ void SelfJoin::runTask(uint64_t lowerBound, uint64_t upperBound, int index, uint
     if (left_key_column[i] == right_key_column[i])
       copy2ResultInting(i, index);
   }
+  inting_result_sizes_[index] = inting_tmp_results_[index][0].size();
 }
 
 // Copy to result
@@ -427,13 +431,12 @@ void SelfJoin::run()
   auto left_col = input_data_[left_col_id];
   auto right_col = input_data_[right_col_id];
 
-  inting_tmp_results_.resize(NUM_THREADS);
-  // inting_result_sizes_.resize(NUM_THREADS);
-
   std::vector<std::thread> threads;
   uint64_t limit = input_->result_size();
   int desiredNumThreads = std::max((int)(limit / 1000), 1);
   NUM_THREADS = std::min(desiredNumThreads, NUM_THREADS);
+  inting_tmp_results_.resize(NUM_THREADS);
+  inting_result_sizes_.resize(NUM_THREADS);
   uint64_t size = limit / (NUM_THREADS);
   if (NUM_THREADS != 1) {
     for (int j = 0; j < NUM_THREADS - 1; j++)
@@ -447,13 +450,29 @@ void SelfJoin::run()
     }
 
     threads.clear();
-    for (int col = 0; col < tmp_results_.size() - 1; ++col) {
-      threads.push_back(std::thread(&SelfJoin::mergeIntingTmpResults, this, col));
+    uint64_t totalSize = std::accumulate(inting_result_sizes_.begin(), inting_result_sizes_.end(), 0);
+    // for (int col = 0; col < tmp_results_.size() - 1; ++col) {
+    //   threads.push_back(std::thread(&SelfJoin::mergeIntingTmpResults, this, col));
+    // }
+    // mergeIntingTmpResults(tmp_results_.size() - 1);
+    // for (auto& thread : threads) {
+    //   thread.join();
+    // }
+    
+    for (int col = 0; col < tmp_results_.size(); ++col) {
+      tmp_results_[col].resize(totalSize);
     }
-    mergeIntingTmpResults(tmp_results_.size() - 1);
+    uint64_t runningSumSize = 0; 
+    for (int j = 0; j < NUM_THREADS - 1; ++j) {
+      mergeIntingTmpResults(j, runningSumSize);
+      // threads.push_back(std::thread(&SelfJoin::mergeIntingTmpResults, this, j, runningSumSize));
+      runningSumSize += inting_tmp_results_[j][0].size();
+    }
+    mergeIntingTmpResults(NUM_THREADS - 1, runningSumSize);
     for (auto& thread : threads) {
       thread.join();
     }
+
   } else {
     for (uint64_t i = 0; i < input_->result_size(); ++i) {
       if (left_col[i] == right_col[i])
