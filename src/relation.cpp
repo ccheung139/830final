@@ -107,17 +107,17 @@ void Relation::loadRelation(const char *file_name)
     addr += size_ * sizeof(uint64_t);
   }
 
-  std::vector<std::vector<int>> histogramsForRelation;
+  // std::vector<std::vector<int>> histogramsForRelation;
 
-  for (int c = 0; c < this->columns_.size(); c++)
-  {
-    std::vector<uint64_t> colVals = getColVals(c);
-    std::vector<int> histogramForCol = constructHistogram(colVals);
+  // for (int c = 0; c < this->columns_.size(); c++)
+  // {
+  //   std::vector<uint64_t> colVals = getColVals(c);
+  //   std::vector<int> histogramForCol = constructHistogram(colVals);
 
-    histogramsForRelation.push_back(histogramForCol);
-  }
+  //   histogramsForRelation.push_back(histogramForCol);
+  // }
 
-  Joiner::appendHistogram(histogramsForRelation);
+  // Joiner::appendHistogram(histogramsForRelation);
   // std::vector<int> firstColVals = getColVals(0);
   // std::vector<int> histogram = constructHistogram(firstColVals);
 

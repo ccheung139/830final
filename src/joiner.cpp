@@ -9,6 +9,8 @@
 #include <sstream>
 #include <vector>
 #include <algorithm>
+// #include <boost/thread.hpp>
+// #include <boost/asio/io_service.hpp>
 
 #include "parser.h"
 
@@ -118,7 +120,7 @@ bool Joiner::sortPredicateInfoByEqualsFirst(PredicateInfo &left, PredicateInfo &
       }
       else if (filter.comparison == '>')
       {
-        scores[0] += 50;
+        scores[0] += 14;
       }
       else
       {
@@ -134,7 +136,7 @@ bool Joiner::sortPredicateInfoByEqualsFirst(PredicateInfo &left, PredicateInfo &
       }
       else if (filter.comparison == '>')
       {
-        scores[1] += 50;
+        scores[1] += 14;
       }
       else
       {
@@ -227,6 +229,7 @@ std::string Joiner::join(std::string line, int index)
 void Joiner::asyncJoin(std::string line, int index)
 {
   aggResults.emplace_back();
+  // asyncJoin(line, index);
   threads.push_back(std::thread(&Joiner::join, this, line, index));
 }
 

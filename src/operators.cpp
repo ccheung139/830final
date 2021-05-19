@@ -5,14 +5,21 @@
 #include <iostream>
 #include <algorithm>
 #include <numeric>
+#include <omp.h>
 // Get materialized results
 std::vector<uint64_t *> Operator::getResults()
 {
   uint64_t size = tmp_results_.size();
   std::vector<uint64_t *> result_vector(size);
-  for (int i = 0; i < size; ++i)
+  // for (int i = 0; i < size; ++i)
+  // {
+  //   result_vector[i] = tmp_results_[i].data();
+  // }
+  
+  #pragma omp parallel num_threads(size)
   {
-    result_vector[i] = tmp_results_[i].data();
+    int id = omp_get_thread_num();
+    result_vector[id] = tmp_results_[id].data();
   }
   return result_vector;
 }
@@ -119,11 +126,12 @@ void FilterScan::runTask(uint64_t lowerBound, uint64_t upperBound, int index)
 // Run
 void FilterScan::run()
 {
-  if (relation_.size() > 1000)
-  {
+
+  int desiredNumThreads = std::max((int)(relation_.size() / 10000), 1);
+  NUM_THREADS = std::min(desiredNumThreads, NUM_THREADS);
+  if (NUM_THREADS != 1) {
     // std::vector<std::thread> threads;
     inting_tmp_results_.resize(NUM_THREADS);
-
     uint64_t size = relation_.size() / NUM_THREADS;
 
     ThreadPool pool(NUM_THREADS);
@@ -210,12 +218,14 @@ void Join::copy2ResultInting(uint64_t left_id, uint64_t right_id, uint64_t index
   // right_inting_tmp_results_[index].push_back(right_id);
 
   unsigned rel_col_id = 0;
-  for (unsigned cId = 0; cId < copy_left_data_.size(); ++cId)
+  uint64_t leftCopySize = copy_left_data_.size();
+  uint64_t rightCopySize = copy_right_data_.size();
+  for (unsigned cId = 0; cId < leftCopySize; ++cId)
   {
     inting_tmp_results_[index][rel_col_id++].push_back(copy_left_data_[cId][left_id]);
   }
 
-  for (unsigned cId = 0; cId < copy_right_data_.size(); ++cId)
+  for (unsigned cId = 0; cId < rightCopySize; ++cId)
   {
     inting_tmp_results_[index][rel_col_id++].push_back(copy_right_data_[cId][right_id]);
   }
@@ -307,7 +317,6 @@ void Join::run()
   NUM_THREADS = std::min(desiredNumThreads, NUM_THREADS);
   inting_tmp_results_.resize(NUM_THREADS);
   inting_result_sizes_.resize(NUM_THREADS);
-
   limit = right_->result_size();
   size = limit / (NUM_THREADS);
 
@@ -427,6 +436,7 @@ void SelfJoin::runTask(uint64_t lowerBound, uint64_t upperBound, int index, uint
     if (left_key_column[i] == right_key_column[i])
       copy2ResultInting(i, index);
   }
+  // inting_result_sizes_[index] = inting_tmp_results_[index][0].size();
 }
 
 // Copy to result
@@ -479,9 +489,11 @@ void SelfJoin::run()
   std::vector<std::future<void>> newThreads;
 
   // std::vector<std::thread> threads;
+
   uint64_t limit = input_->result_size();
   int desiredNumThreads = std::max((int)(limit / 1000), 1);
   NUM_THREADS = std::min(desiredNumThreads, NUM_THREADS);
+  inting_tmp_results_.resize(NUM_THREADS);
   uint64_t size = limit / (NUM_THREADS);
   if (NUM_THREADS != 1)
   {

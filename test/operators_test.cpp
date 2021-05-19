@@ -83,8 +83,8 @@ TEST_F(OperatorTest, Join) {
     PredicateInfo p_info
         (SelectInfo(l_rid, r1_bind, l_col_id),
          SelectInfo(r_rid, r2_bind, r_col_id));
-    auto r1_scan_ptr = std::make_unique<Scan>(r1_scan);
-    auto r2_scan_ptr = std::make_unique<Scan>(r2_scan);
+    auto r1_scan_ptr = std::make_shared<Scan>(r1_scan);
+    auto r2_scan_ptr = std::make_shared<Scan>(r2_scan);
     Join join(move(r1_scan_ptr), move(r2_scan_ptr), p_info);
     join.run();
   }
@@ -92,8 +92,8 @@ TEST_F(OperatorTest, Join) {
     // Self join
     PredicateInfo p_info(SelectInfo(0, 0, 1), SelectInfo(0, 1, 2));
     Scan r1_scan2(r1, 1);
-    auto left_ptr = std::make_unique<Scan>(r1_scan);
-    auto right_ptr = std::make_unique<Scan>(r1_scan2);
+    auto left_ptr = std::make_shared<Scan>(r1_scan);
+    auto right_ptr = std::make_shared<Scan>(r1_scan2);
     Join join(move(left_ptr), move(right_ptr), p_info);
     join.require(SelectInfo(r1_bind, 0));
     join.run();
@@ -110,8 +110,8 @@ TEST_F(OperatorTest, Join) {
   }
   {
     // Join r1 and r2 (should have same result as r1 and r1)
-    auto left_ptr = std::make_unique<Scan>(r2_scan);
-    auto right_ptr = std::make_unique<Scan>(r1_scan);
+    auto left_ptr = std::make_shared<Scan>(r2_scan);
+    auto right_ptr = std::make_shared<Scan>(r1_scan);
     PredicateInfo p_info(SelectInfo(1, r2_bind, 1), SelectInfo(0, r1_bind, 2));
     Join join(move(left_ptr), move(right_ptr), p_info);
     join.require(SelectInfo(r1_bind, 1));
@@ -137,14 +137,14 @@ TEST_F(OperatorTest, Checksum) {
   Scan r1_scan(r1, rel_binding);
 
   {
-    auto r1_scan_ptr = std::make_unique<Scan>(r1_scan);
+    auto r1_scan_ptr = std::make_shared<Scan>(r1_scan);
     std::vector<SelectInfo> checksum_columns;
     Checksum checkSum(move(r1_scan_ptr), checksum_columns);
     checkSum.run();
     ASSERT_EQ(checkSum.check_sums().size(), 0ull);
   }
   {
-    auto r1_scan_ptr = std::make_unique<Scan>(r1_scan);
+    auto r1_scan_ptr = std::make_shared<Scan>(r1_scan);
     std::vector<SelectInfo> checksum_columns;
     checksum_columns.emplace_back(0, rel_binding, 0);
     checksum_columns.emplace_back(0, rel_binding, 2);
@@ -164,7 +164,7 @@ TEST_F(OperatorTest, Checksum) {
     uint64_t constant = 3;
     FilterInfo f_info(s_info, constant, FilterInfo::Comparison::Equal);
     FilterScan r1_scan_filter(r1, f_info);
-    auto filter_scan_ptr = std::make_unique<FilterScan>(r1_scan_filter);
+    auto filter_scan_ptr = std::make_shared<FilterScan>(r1_scan_filter);
     std::vector<SelectInfo> checksum_columns;
     checksum_columns.emplace_back(0, rel_binding, 2);
     Checksum checksum(move(filter_scan_ptr), checksum_columns);
@@ -180,7 +180,7 @@ TEST_F(OperatorTest, SelfJoin) {
   {
     PredicateInfo
         p_info(SelectInfo(1, rel_binding, 1), SelectInfo(1, rel_binding, 2));
-    SelfJoin selfjoin(std::make_unique<Scan>(r1_scan), p_info);
+    SelfJoin selfjoin(std::make_shared<Scan>(r1_scan), p_info);
     selfjoin.run();
     ASSERT_EQ(selfjoin.result_size(), r1.size());
     ASSERT_EQ(selfjoin.getResults().size(), 0ull);
@@ -188,7 +188,7 @@ TEST_F(OperatorTest, SelfJoin) {
   {
     PredicateInfo
         p_info(SelectInfo(1, rel_binding, 1), SelectInfo(1, rel_binding, 2));
-    SelfJoin selfjoin(std::make_unique<Scan>(r1_scan), p_info);
+    SelfJoin selfjoin(std::make_shared<Scan>(r1_scan), p_info);
     selfjoin.require(SelectInfo(rel_binding, 0));
     selfjoin.run();
     selfjoin.resolve(SelectInfo(rel_binding, 0));
