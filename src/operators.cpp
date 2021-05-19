@@ -2,6 +2,8 @@
 
 #include <cassert>
 #include <iostream>
+#include <algorithm>
+#include <numeric>
 // Get materialized results
 std::vector<uint64_t *> Operator::getResults()
 {
@@ -197,32 +199,19 @@ void Join::copy2ResultInting(uint64_t left_id, uint64_t right_id, uint64_t index
   }
 }
 
-void Join::mergeIntingTmpResults(int col)
+void Join::mergeIntingTmpResults(int index, uint64_t offset)
 {
-  for (int threadIdx = 0; threadIdx < inting_tmp_results_.size(); ++threadIdx)
-    {
-      auto data = inting_tmp_results_[threadIdx][col];
-      tmp_results_[col].insert(tmp_results_[col].end(), data.begin(), data.end());
-    }
+  // for (int threadIdx = 0; threadIdx < inting_tmp_results_.size(); ++threadIdx)
+  //   {
+  //     auto data = inting_tmp_results_[threadIdx][col];
+  //     tmp_results_[col].insert(tmp_results_[col].end(), data.begin(), data.end());
+  //   }
+  for (int col = 0; col < tmp_results_.size(); ++col) {
+    auto& data = inting_tmp_results_[index][col];
+    std::vector<uint64_t>::iterator it = tmp_results_[col].begin();
+    std::copy(data.begin(), data.end(), tmp_results_[col].begin() + offset);
+  }
 }
-
-// void Join::mergeIntingTmpResultsLeft(int col)
-// {
-//   for (int threadIdx = 0; threadIdx < NUM_THREADS; ++threadIdx) {
-//     for (int i = 0; i < left_inting_tmp_results_[threadIdx].size(); ++i) {
-//       tmp_results_[col].push_back(copy_left_data_[col][left_inting_tmp_results_[threadIdx][i]]);
-//     }
-//   }
-// }
-
-// void Join::mergeIntingTmpResultsRight(int col)
-// {
-//   for (int threadIdx = 0; threadIdx < NUM_THREADS; ++threadIdx) {
-//     for (int i = 0; i < left_inting_tmp_results_[threadIdx].size(); ++i) {
-//       tmp_results_[col].push_back(copy_right_data_[col - copy_left_data_.size()][right_inting_tmp_results_[threadIdx][i]]);
-//     }
-//   }
-// }
 
 void SelfJoin::mergeIntingTmpResults(int col)
 {
@@ -292,9 +281,10 @@ void Join::run()
   }
   // Probe phase
   auto right_key_column = right_input_data[right_col_id];
-  int desiredNumThreads = std::max((int)(right_->result_size() / 5000), 1);
+  int desiredNumThreads = std::max((int)(right_->result_size() / 10000), 1);
   NUM_THREADS = std::min(desiredNumThreads, NUM_THREADS);
   inting_tmp_results_.resize(NUM_THREADS);
+  inting_result_sizes_.resize(NUM_THREADS);
 
   limit = right_->result_size();
   size = limit / (NUM_THREADS);
@@ -311,24 +301,28 @@ void Join::run()
     }
 
     threads.clear();
-    for (int col = 0; col < tmp_results_.size() - 1; ++col) {
-      threads.push_back(std::thread(&Join::mergeIntingTmpResults, this, col));
-    }
-    mergeIntingTmpResults(tmp_results_.size() - 1);
+    // for (int col = 0; col < tmp_results_.size() - 1; ++col) {
+    //   threads.push_back(std::thread(&Join::mergeIntingTmpResults, this, col));
+    // }
+    // mergeIntingTmpResults(tmp_results_.size() - 1);
+    // for (auto& thread : threads) {
+    //   thread.join();
+    // }
 
-    // for (int col = 0; col < copy_left_data_.size(); ++col) {
-    //   threads.push_back(std::thread(&Join::mergeIntingTmpResultsLeft, this, col));
-    //   // mergeIntingTmpResultsLeft(col);
-    // }
-    // // mergeIntingTmpResultsLeft(copy_left_data_.size());
-    
-    // for (int col = copy_left_data_.size(); col < tmp_results_.size(); ++col) {
-    //   threads.push_back(std::thread(&Join::mergeIntingTmpResultsRight, this, col));
-    //   // mergeIntingTmpResultsRight(col);
-    // }
+    uint64_t totalSize = std::accumulate(inting_result_sizes_.begin(), inting_result_sizes_.end(), 0);
+    for (int col = 0; col < tmp_results_.size(); ++col) {
+      tmp_results_[col].resize(totalSize);
+    }
+    uint64_t runningSumSize = 0; 
+    for (int j = 0; j < NUM_THREADS - 1; ++j) {
+      threads.push_back(std::thread(&Join::mergeIntingTmpResults, this, j, runningSumSize));
+      runningSumSize += inting_tmp_results_[j][0].size();
+    }
+    mergeIntingTmpResults(NUM_THREADS - 1, runningSumSize);
     for (auto& thread : threads) {
       thread.join();
     }
+
   } else {
     auto right_key_column = right_input_data[right_col_id];
     for (uint64_t i = 0, limit = i + right_->result_size(); i != limit; ++i) {
@@ -340,20 +334,34 @@ void Join::run()
     }
   }
   result_size_ = tmp_results_[0].size();
+  // std::cerr << "desired " << result_size_ << std::endl;
 }
 
 void Join::runTask(uint64_t lowerBound, uint64_t upperBound, int index, uint64_t *right_key_column)
 {
   inting_tmp_results_[index].resize(tmp_results_.size());
+  std::vector<std::vector<uint64_t>> &localCopy = inting_tmp_results_[index];
   for (uint64_t i = lowerBound; i < upperBound; ++i)
   {
     auto rightKey = right_key_column[i];
     auto range = hash_table_.equal_range(rightKey);
     for (auto iter = range.first; iter != range.second; ++iter)
     {
-      copy2ResultInting(iter->second, i, index);
+      // copy2ResultInting(iter->second, i, index);
+      int left_id = iter->second;
+      unsigned rel_col_id = 0;
+      for (unsigned cId = 0; cId < copy_left_data_.size(); ++cId)
+      {
+        localCopy[rel_col_id++].push_back(copy_left_data_[cId][left_id]);
+      }
+
+      for (unsigned cId = 0; cId < copy_right_data_.size(); ++cId)
+      {
+        localCopy[rel_col_id++].push_back(copy_right_data_[cId][i]);
+      }
     }
   }
+  inting_result_sizes_[index] = localCopy[0].size();
 }
 
 void SelfJoin::copy2ResultInting(uint64_t i, int threadIndex)
@@ -424,7 +432,7 @@ void SelfJoin::run()
 
   std::vector<std::thread> threads;
   uint64_t limit = input_->result_size();
-  int desiredNumThreads = std::max((int)(limit / 5000), 1);
+  int desiredNumThreads = std::max((int)(limit / 1000), 1);
   NUM_THREADS = std::min(desiredNumThreads, NUM_THREADS);
   uint64_t size = limit / (NUM_THREADS);
   if (NUM_THREADS != 1) {
@@ -464,7 +472,19 @@ void Checksum::run()
     input_->require(sInfo);
   }
   input_->run();
-  auto results = input_->getResults();
+  std::vector<uint64_t *> results = input_->getResults();
+
+  // std::vector<std::thread> threads;
+  // check_sums_.resize(col_info_.size());
+  // for (int col = 0; col < col_info_.size(); ++col)
+  // {
+  //   // runTask(col);
+  //   threads.push_back(std::thread(&Checksum::runTask, this, col));
+  // }
+  // for (auto &thread : threads)
+  // {
+  //   thread.join();
+  // }
 
   for (auto &sInfo : col_info_)
   {
@@ -479,3 +499,17 @@ void Checksum::run()
     check_sums_.push_back(sum);
   }
 }
+
+// void Checksum::runTask(int col) {
+//   auto &sInfo = col_info_[col];
+//   auto col_id = input_->resolve(sInfo);
+//   auto result_col = results[col_id];
+//   uint64_t sum = 0;
+//   result_size_ = input_->result_size();
+//   for (auto iter = result_col, limit = iter + input_->result_size();
+//         iter != limit;
+//         ++iter)
+//     sum += *iter;
+//   check_sums_[col] = sum;
+//   // check_sums_.push_back(sum);
+// }

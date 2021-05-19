@@ -45,7 +45,7 @@ class Operator {
   // std::vector<std::vector<uint64_t>> right_inting_tmp_results_;
 
   // result sizes gathered by each thread
-  // std::vector<uint64_t> inting_result_sizes_;
+  std::vector<uint64_t> inting_result_sizes_;
 
   /// The result size
   uint64_t result_size_ = 0;
@@ -169,7 +169,7 @@ private:
 
   void buildHashTable(uint64_t lowerBound, uint64_t upperBound, int index, uint64_t *left_key_column);
 
-  void mergeIntingTmpResults(int col);
+  void mergeIntingTmpResults(int index, uint64_t offset);
 
   void mergeIntingTmpResultsLeft(int col);
 
@@ -236,6 +236,8 @@ private:
 
   std::vector<uint64_t> check_sums_;
 
+  // std::vector<uint64_t *> results;
+
 public:
   /// The constructor
   Checksum(std::shared_ptr<Operator> &&input,
@@ -248,6 +250,7 @@ public:
     // and thus should never request anything
     throw;
   }
+  // void runTask(int col);
   /// Run
   void run() override;
 

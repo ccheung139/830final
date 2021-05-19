@@ -41,11 +41,8 @@ int main(int argc, char *argv[]) {
       index = 0;
       continue; // End of a batch
     }
-    // i.parseQuery(line);
     joiner.asyncJoin(line, index);
     ++index;
-    
-    // std::cout << joiner.join(i);
   }
 
   return 0;
