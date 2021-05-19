@@ -6,6 +6,9 @@
 #include <algorithm>
 #include <numeric>
 #include <omp.h>
+
+ThreadPool pool(16);
+
 // Get materialized results
 std::vector<uint64_t *> Operator::getResults()
 {
@@ -134,7 +137,6 @@ void FilterScan::run()
     inting_tmp_results_.resize(NUM_THREADS);
     uint64_t size = relation_.size() / NUM_THREADS;
 
-    ThreadPool pool(NUM_THREADS);
     std::vector<std::future<void>> newThreads;
 
     for (int i = 0; i < NUM_THREADS - 1; ++i)
@@ -320,7 +322,6 @@ void Join::run()
   limit = right_->result_size();
   size = limit / (NUM_THREADS);
 
-  ThreadPool pool(NUM_THREADS);
 
   if (NUM_THREADS != 1)
   {
@@ -485,7 +486,7 @@ void SelfJoin::run()
   inting_tmp_results_.resize(NUM_THREADS);
   // inting_result_sizes_.resize(NUM_THREADS);
 
-  ThreadPool pool(NUM_THREADS);
+  
   std::vector<std::future<void>> newThreads;
 
   // std::vector<std::thread> threads;
