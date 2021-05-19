@@ -118,7 +118,7 @@ bool Joiner::sortPredicateInfoByEqualsFirst(PredicateInfo &left, PredicateInfo &
       }
       else if (filter.comparison == '>')
       {
-        scores[0] += 50;
+        scores[0] += 14;
       }
       else
       {
@@ -134,7 +134,7 @@ bool Joiner::sortPredicateInfoByEqualsFirst(PredicateInfo &left, PredicateInfo &
       }
       else if (filter.comparison == '>')
       {
-        scores[1] += 50;
+        scores[1] += 14;
       }
       else
       {
