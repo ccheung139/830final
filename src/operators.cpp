@@ -322,7 +322,6 @@ void Join::run()
   limit = right_->result_size();
   size = limit / (NUM_THREADS);
 
-
   if (NUM_THREADS != 1)
   {
 
