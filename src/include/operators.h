@@ -159,6 +159,11 @@ private:
   /// The input data that has to be copied
   std::vector<uint64_t *> copy_left_data_, copy_right_data_;
 
+  std::vector<std::vector<uint64_t>> leftTableWork;
+  std::vector<std::vector<uint64_t>> leftTableIndex;
+  std::vector<std::vector<uint64_t>> rightTableWork;
+  std::vector<std::vector<uint64_t>> rightTableIndex;
+
 private:
   /// Copy tuple to result
   void copy2Result(uint64_t left_id, uint64_t right_id);
