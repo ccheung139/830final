@@ -8,8 +8,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # set(CMAKE_C_COMPILER /usr/local/bin/gcc)
 # set(CMAKE_CXX_COMPILER /usr/local/bin/g++)
 
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Ofast -g -fsanitize=address -Wall")
-set(CMAKE_CXX_FLAGS_RELEASE "-Ofast")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Ofast -fopenmp -g -fsanitize=address -Wall")
+set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -fopenmp")
 
 include_directories(${PROJECT_SOURCE_DIR}/src/include)
 
@@ -37,11 +37,14 @@ if (CMAKE_BUILD_TYPE MATCHES "[Dd][Ee][Bb][Uu][Gg]" OR FORCE_TESTS)
     add_subdirectory(test)
 endif()
 
-find_package(Boost REQUIRED COMPONENTS thread)
+# link_directories(${CMAKE_SOURCE_DIR}/lib)
+
+# find_package(Boost REQUIRED COMPONENTS thread)
 # INCLUDE_DIRECTORIES( ${Boost_INCLUDE_DIR} )
 find_package( Threads )
 add_executable(driver src/main/main.cpp)
-target_link_libraries(driver database ${CMAKE_THREAD_LIBS_INIT} boost_thread)
+# target_link_libraries(driver database boost_system boost_thread boost_asio tbb pthread m stdc++ dl jemalloc)
+target_link_libraries(driver database ${CMAKE_THREAD_LIBS_INIT})
 
 # Interactive command line tool to translate our query format to SQL queries
 add_executable(query2SQL src/main/query2SQL.cpp)

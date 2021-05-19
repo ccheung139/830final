@@ -9,6 +9,8 @@
 #include <sstream>
 #include <vector>
 #include <algorithm>
+// #include <boost/thread.hpp>
+// #include <boost/asio/io_service.hpp>
 
 #include "parser.h"
 
@@ -227,6 +229,7 @@ std::string Joiner::join(std::string line, int index)
 void Joiner::asyncJoin(std::string line, int index)
 {
   aggResults.emplace_back();
+  // asyncJoin(line, index);
   threads.push_back(std::thread(&Joiner::join, this, line, index));
 }
 
