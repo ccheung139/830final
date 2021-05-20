@@ -21,8 +21,8 @@ struct hash<SelectInfo>
 {
   std::size_t operator()(SelectInfo const &s) const noexcept
   {
-    return (s.binding ^ s.col_id)*2654435761 % 4294967296;
-    // return s.binding ^ (s.col_id << 5);
+    // return (s.binding ^ s.col_id)*2654435761 % 4294967296;
+    return s.binding ^ (s.col_id << 5);
   }
 };
 }; // namespace std
@@ -30,7 +30,7 @@ struct hash<SelectInfo>
 /// Operators materialize their entire result
 class Operator {
  protected:
-  int NUM_THREADS = 24;
+  int NUM_THREADS = 30;
   /// Mapping from select info to data
   std::unordered_map<SelectInfo, unsigned> select_to_result_col_id_;
   /// The materialized results
@@ -149,6 +149,7 @@ private:
 
   /// The hash table for the join
   HT hash_table_;
+  std::vector<HT> hashTables;
   /// Columns that have to be materialized
   std::unordered_set<SelectInfo> requested_columns_;
   /// Left/right columns that have been requested
@@ -170,9 +171,11 @@ private:
 
   void copy2ResultInting(uint64_t left_id, uint64_t right_id, uint64_t index);
 
-  void runTask(uint64_t lowerBound, uint64_t upperBound, int index, uint64_t *right_key_column);
+  void runTask(uint64_t lowerBound, uint64_t upperBound, int index, uint64_t *left_key_column, uint64_t *right_key_column);
 
-  void populateLeftWork(uint64_t lowerBound, uint64_t upperBound, uint64_t *relevant_column);
+  void populateLeftWork(uint64_t lowerBound, uint64_t upperBound, uint64_t *relevant_column, uint64_t size);
+
+  void createHashTables(int index, uint64_t *left_key_column);
 
   void populateRightWork(uint64_t lowerBound, uint64_t upperBound, uint64_t *relevant_column);
 
